@@ -3,6 +3,8 @@ package main
 import (
     "encoding/json"
     "fmt"
+    "io/ioutil"
+    "net/http"
 )
 
 type filedesc struct {
@@ -17,15 +19,32 @@ type listing struct {
 }
 
 func main() {
-  text := `{"prefixes":["ach/","af/","an/","ar/"],"files":[{"name":"firefox-52.0.tar.bz2","last_modified":"2017-03-06T16:24:33Z","size":58750643}]}`
-  textBytes := []byte(text)
+  url := "http://delivery-prod-elb-1rws3domn9m17-111664144.us-west-2.elb.amazonaws.com/pub/firefox/releases/"
 
-  listing1 := listing{}
-  if err := json.Unmarshal(textBytes, &listing1); err != nil {
+  client := http.Client{}
+
+  req, err := http.NewRequest(http.MethodGet, url, nil)
+  if err != nil {
+    panic(err)
+  }
+  req.Header.Set("Accept", "application/json")
+  req.Header.Set("User-Agent", "systemaddons-versions")
+
+  res, getErr := client.Do(req)
+  if getErr != nil {
+    panic(getErr)
+  }
+  body, readErr := ioutil.ReadAll(res.Body)
+  if readErr != nil {
+    panic(readErr)
+  }
+
+  rootList := listing{}
+  if err := json.Unmarshal(body, &rootList); err != nil {
     panic(err)
   }
 
-  for _, prefix := range listing1.Prefixes {
+  for _, prefix := range rootList.Prefixes {
     fmt.Println(prefix)
   }
 }
