@@ -1,24 +1,31 @@
 package main
 
 import (
+    "encoding/json"
     "fmt"
-    "github.com/jlaffaye/ftp"
 )
 
+type filedesc struct {
+    Name string `json:"name"`
+    Last_modified string `json:"last_modified"`
+    Size int `json:"size"`
+}
+
+type listing struct {
+    Prefixes []string `json:"prefixes"`
+    Files []filedesc `json:"files"`
+}
+
 func main() {
-  var err error
-  var handle *ftp.ServerConn
+  text := `{"prefixes":["ach/","af/","an/","ar/"],"files":[{"name":"firefox-52.0.tar.bz2","last_modified":"2017-03-06T16:24:33Z","size":58750643}]}`
+  textBytes := []byte(text)
 
-  if handle, err = ftp.Connect("ftp.mozilla.org:21"); err != nil {
-    panic(err)
-  }
-  var entries []*ftp.Entry
-
-  if entries, err = handle.List("/pub/firefox/releases/"); err != nil {
+  listing1 := listing{}
+  if err := json.Unmarshal(textBytes, &listing1); err != nil {
     panic(err)
   }
 
-  for _, entry := range entries {
-    fmt.Println(entry.Name)
+  for _, prefix := range listing1.Prefixes {
+    fmt.Println(prefix)
   }
 }
