@@ -18,33 +18,58 @@ type listing struct {
     Files []filedesc `json:"files"`
 }
 
-func main() {
-  url := "http://delivery-prod-elb-1rws3domn9m17-111664144.us-west-2.elb.amazonaws.com/pub/firefox/releases/"
-
+func fetchlist(url string) (*listing, error) {
   client := http.Client{}
 
   req, err := http.NewRequest(http.MethodGet, url, nil)
   if err != nil {
-    panic(err)
+    return nil, err
   }
   req.Header.Set("Accept", "application/json")
   req.Header.Set("User-Agent", "systemaddons-versions")
 
   res, getErr := client.Do(req)
   if getErr != nil {
-    panic(getErr)
+    return nil, getErr
   }
   body, readErr := ioutil.ReadAll(res.Body)
   if readErr != nil {
-    panic(readErr)
+    return nil, readErr
   }
 
   rootList := listing{}
-  if err := json.Unmarshal(body, &rootList); err != nil {
+  if jsonErr := json.Unmarshal(body, &rootList); jsonErr != nil {
+    return nil, jsonErr
+  }
+  return &rootList, nil
+}
+
+func main() {
+  url := "http://delivery-prod-elb-1rws3domn9m17-111664144.us-west-2.elb.amazonaws.com/pub/firefox/releases/"
+
+  releaseList, err := fetchlist(url)
+  if err != nil {
     panic(err)
   }
-
-  for _, prefix := range rootList.Prefixes {
-    fmt.Println(prefix)
+  for _, release := range releaseList.Prefixes {
+    archList, err := fetchlist(url + release)
+    if err != nil {
+      panic(err)
+    }
+    for _, arch := range archList.Prefixes {
+      langList, err := fetchlist(url + release + arch)
+      if err != nil {
+        panic(err)
+      }
+      for _, lang := range langList.Prefixes {
+        fileList, err := fetchlist(url + release + arch + lang)
+        if err != nil {
+          panic(err)
+        }
+        for _, file := range fileList.Files {
+          fmt.Println(release + arch + lang + file.Name)
+        }
+      }
+    }
   }
 }
