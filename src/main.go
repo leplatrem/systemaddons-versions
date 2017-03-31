@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 )
 
@@ -51,6 +53,27 @@ func fetchlist(url string) (*listing, error) {
 	return &rootList, nil
 }
 
+func download(url string, output string) (err error) {
+	out, err := os.Create(output + ".part")
+	defer out.Close()
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Get(url)
+	defer resp.Body.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
 	releaseList, err := fetchlist(URL)
 	if err != nil {
@@ -87,7 +110,7 @@ func main() {
 					if match, _ := regexp.MatchString(FILE, file.Name); !match {
 						continue
 					}
-					fmt.Println(release + arch + lang + file.Name)
+					//download(URL + release + arch + lang + file.Name, file.Name)
 				}
 			}
 		}
