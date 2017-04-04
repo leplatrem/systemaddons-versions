@@ -1,0 +1,52 @@
+<html>
+  <head>
+    <title>System Addons Versions</title>
+  </head>
+  <body>
+    <div id="main">Loading...</div>
+
+    <template id="version-info-tpl">
+      <div class="version-info">
+        <h2 class="title"></h2>
+        <dl class="url">
+          <dt>URL</dt>
+          <dd></dd>
+        </dl>
+        <dl class="buildId">
+          <dt>Build ID</dt>
+          <dd></dd>
+        </dl>
+        <dl class="target">
+          <dt>Target</dt>
+          <dd></dd>
+        </dl>
+        <dl class="lang">
+          <dt>Lang</dt>
+          <dd></dd>
+        </dl>
+        <dl class="channel">
+          <dt>Channel</dt>
+          <dd></dd>
+        </dl>
+        <dl class="addons">
+          <dt>System Addons</dt>
+          <dd>
+            <table class="addons">
+              <thead>
+                <td>Id</td><td>Built-in</td><td>Updated</td>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </dd>
+        </dl>
+      </div>
+    </template>
+    <template id="addon-row-tpl">
+      <tr>
+        <td class="id"></td><td class="builtin"></td><td class="updated"></td>
+      </tr>
+    </template>
+    <script type="text/javascript" src="main.js"></script>
+  </body>
+</html>

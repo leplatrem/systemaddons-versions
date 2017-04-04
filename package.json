@@ -1,0 +1,6 @@
+{
+  "name": "systemaddons-versions-ui",
+  "dependencies": {
+    "elm": "^0.18.0"
+  }
+}
