@@ -1,7 +1,7 @@
 const KINTO_URL = "https://kinto-ota.dev.mozaws.net/v1";
 
 async function fetchVersions() {
-  const url = `${KINTO_URL}/buckets/systemaddons/collections/versions/records?_sort=release.version`;
+  const url = `${KINTO_URL}/buckets/systemaddons/collections/versions/records?_sort=-release.version`;
   const resp = await fetch(url);
   const body = await resp.json();
   return body.data;
