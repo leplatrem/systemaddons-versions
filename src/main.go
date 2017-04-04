@@ -23,7 +23,7 @@ import (
 
 const DELIVERY_URL string = "http://delivery-prod-elb-1rws3domn9m17-111664144.us-west-2.elb.amazonaws.com/pub/firefox/releases/"
 const AUS_URL string = "https://aus5.mozilla.org/update/3/SystemAddons/{VERSION}/{BUILD_ID}/{BUILD_TARGET}/{LOCALE}/{CHANNEL}/{OS_VERSION}/{DISTRIBUTION}/{DISTRIBUTION_VERSION}/update.xml"
-const KINTO_URL string = "https://kinto.dev.mozaws.net/v1"
+const KINTO_URL string = "https://kinto-ota.dev.mozaws.net/v1"
 const KINTO_AUTH string = "Basic dXNlcjpwYXNz" // user:pass
 
 // const VERSION string = "^[0-9]+"
@@ -111,8 +111,6 @@ func walkReleases(done <-chan struct{}, rootUrl string, minVersion string) (<-ch
 			errc <- err
 			return
 		}
-
-		// XXX check and compare latest release.
 
 		for _, versionPrefix := range versionList.Prefixes {
 			version := strings.Replace(versionPrefix, "/", "", 1)
@@ -452,6 +450,11 @@ func lastPublish(serverUrl string) (release string, err error) {
 	if getErr != nil {
 		return "", getErr
 	}
+
+	if res.StatusCode != 200 {
+		return "", errors.New("Could not read remote data")
+	}
+
 	body, readErr := ioutil.ReadAll(res.Body)
 	if readErr != nil {
 		return "", readErr
