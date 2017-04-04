@@ -46,8 +46,8 @@ type release struct {
 }
 
 type systemaddon struct {
-	Name    string `xml:"id"`
-	Version string `xml:"version"`
+	Name    string `xml:"id" json:"id"`
+	Version string `xml:"version" json:"version"`
 }
 
 type releaseinfo struct {
