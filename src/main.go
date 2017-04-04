@@ -94,12 +94,17 @@ func fetchlist(url string) (*listing, error) {
 	return &rootList, nil
 }
 
-func walkReleases(done <-chan struct{}, rootUrl string) (<-chan release, <-chan error) {
+func walkReleases(done <-chan struct{}, rootUrl string, minVersion string) (<-chan release, <-chan error) {
 	downloads := make(chan release)
 	errc := make(chan error, 1)
 
+	if minVersion != "" {
+		fmt.Println("Latest known version:", minVersion)
+	}
+
 	go func() {
 		defer close(downloads)
+		defer close(errc)
 
 		versionList, err := fetchlist(rootUrl)
 		if err != nil {
@@ -114,6 +119,11 @@ func walkReleases(done <-chan struct{}, rootUrl string) (<-chan release, <-chan 
 			if match, _ := regexp.MatchString(VERSION, version); !match {
 				continue
 			}
+
+			if (minVersion != "") && (version <= minVersion) {
+				continue
+			}
+
 			targetList, err := fetchlist(rootUrl + versionPrefix)
 			if err != nil {
 				errc <- err
@@ -428,12 +438,46 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 	return errc
 }
 
+func lastPublish(serverUrl string) (release string, err error) {
+	url := serverUrl + "/buckets/systemaddons/collections/versions/records?_sort=-release.version&_limit=1"
+
+	client := http.Client{}
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", "systemaddons-versions")
+
+	res, getErr := client.Do(req)
+	if getErr != nil {
+		return "", getErr
+	}
+	body, readErr := ioutil.ReadAll(res.Body)
+	if readErr != nil {
+		return "", readErr
+	}
+
+	type respbody struct {
+		Data []releaseinfo `json:"data"`
+	}
+	releasesList := respbody{}
+	if err = json.Unmarshal(body, &releasesList); err != nil {
+		return "", err
+	}
+	if len(releasesList.Data) < 1 {
+		return "", nil
+	}
+	return releasesList.Data[0].Release.Version, nil
+}
+
 func publish(serverUrl string, authHeader string, info releaseinfo) (err error) {
 	hasher := md5.New()
 	hasher.Write([]byte(info.Release.Url))
 	recordId := hex.EncodeToString(hasher.Sum(nil))
 
 	url := serverUrl + "/buckets/systemaddons/collections/versions/records/" + recordId
+
+	fmt.Println("Published info to", url)
 
 	client := http.Client{}
 
@@ -465,10 +509,13 @@ func publish(serverUrl string, authHeader string, info releaseinfo) (err error) 
 }
 
 func main() {
-
 	done := make(chan struct{})
 
-	releases, errc := walkReleases(done, DELIVERY_URL)
+	minVersion, err := lastPublish(KINTO_URL)
+	if err != nil {
+		panic(err)
+	}
+	releases, errc := walkReleases(done, DELIVERY_URL, minVersion)
 
 	results := make(chan releaseinfo)
 
