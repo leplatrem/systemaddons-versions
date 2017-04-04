@@ -3,7 +3,10 @@ package main
 import (
 	"archive/tar"
 	"archive/zip"
+	"bytes"
 	"compress/bzip2"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -19,27 +22,27 @@ import (
 )
 
 const DELIVERY_URL string = "http://delivery-prod-elb-1rws3domn9m17-111664144.us-west-2.elb.amazonaws.com/pub/firefox/releases/"
-const AUS_URL string = "https://aus5.mozilla.org/update/3/SystemAddons/{VERSION}/{BUILD_ID}/{BUILD_TARGET}/{LOCALE}/}{CHANNEL}/{OS_VERSION}/{DISTRIBUTION}/{DISTRIBUTION_VERSION}/update.xml"
+const AUS_URL string = "https://aus5.mozilla.org/update/3/SystemAddons/{VERSION}/{BUILD_ID}/{BUILD_TARGET}/{LOCALE}/{CHANNEL}/{OS_VERSION}/{DISTRIBUTION}/{DISTRIBUTION_VERSION}/update.xml"
+const KINTO_URL string = "https://kinto.dev.mozaws.net/v1"
+const KINTO_AUTH string = "Basic dXNlcjpwYXNz" // user:pass
 
 // const VERSION string = "^[0-9]+"
-// const OS string = "win|mac|linux"
+// const TARGET string = "win|mac|linux"
 // const LANG string = "[a-z]+\\-[A-Z]+"
 // const FILE string = "(zip|\\d\\.tar\\.gz|dmg)$"
-const VERSION string = "^53\\.0b2"
-const OS string = "linux"
+const VERSION string = "^[5-9][0-9]"
+const TARGET string = "linux-x86_64"
 const LANG string = "en-US"
 const FILE string = "\\d\\.tar\\.(gz|bz2)$"
 
 type release struct {
-	Url      string
-	BuildID  string
-	Version  string
-	Target   string
-	Platform string
-	Arch     string
-	Lang     string
-	Channel  string
-	Filename string
+	Url      string `json:"url"`
+	BuildID  string `json:"buildId"`
+	Version  string `json:"version"`
+	Target   string `json:"target"`
+	Lang     string `json:"lang"`
+	Channel  string `json:"channel"`
+	Filename string `json:"filename"`
 }
 
 type systemaddon struct {
@@ -48,9 +51,9 @@ type systemaddon struct {
 }
 
 type releaseinfo struct {
-	Release  release
-	Builtins []systemaddon
-	Updates  []systemaddon
+	Release  release       `json:"release"`
+	Builtins []systemaddon `json:"builtins"`
+	Updates  []systemaddon `json:"updates"`
 }
 
 type filedesc struct {
@@ -107,28 +110,31 @@ func walkReleases(done <-chan struct{}, rootUrl string) (<-chan release, <-chan 
 		// XXX check and compare latest release.
 
 		for _, versionPrefix := range versionList.Prefixes {
-			if match, _ := regexp.MatchString(VERSION, versionPrefix); !match {
+			version := strings.Replace(versionPrefix, "/", "", 1)
+			if match, _ := regexp.MatchString(VERSION, version); !match {
 				continue
 			}
-			platformList, err := fetchlist(rootUrl + versionPrefix)
+			targetList, err := fetchlist(rootUrl + versionPrefix)
 			if err != nil {
 				errc <- err
 				return
 			}
-			for _, platformPrefix := range platformList.Prefixes {
-				if match, _ := regexp.MatchString(OS, platformPrefix); !match {
+			for _, targetPrefix := range targetList.Prefixes {
+				target := strings.Replace(targetPrefix, "/", "", 1)
+				if match, _ := regexp.MatchString(TARGET, targetPrefix); !match {
 					continue
 				}
-				langList, err := fetchlist(rootUrl + versionPrefix + platformPrefix)
+				langList, err := fetchlist(rootUrl + versionPrefix + targetPrefix)
 				if err != nil {
 					errc <- err
 					return
 				}
 				for _, langPrefix := range langList.Prefixes {
+					lang := strings.Replace(langPrefix, "/", "", 1)
 					if match, _ := regexp.MatchString(LANG, langPrefix); !match {
 						continue
 					}
-					fileList, err := fetchlist(rootUrl + versionPrefix + platformPrefix + langPrefix)
+					fileList, err := fetchlist(rootUrl + versionPrefix + targetPrefix + langPrefix)
 					if err != nil {
 						errc <- err
 						return
@@ -137,19 +143,15 @@ func walkReleases(done <-chan struct{}, rootUrl string) (<-chan release, <-chan 
 						if match, _ := regexp.MatchString(FILE, file.Name); !match {
 							continue
 						}
-
-						// Prepare release attributes.
-						url := rootUrl + versionPrefix + platformPrefix + langPrefix + file.Name
-						version := strings.Replace(versionPrefix, "/", "", 1)
-						lang := strings.Replace(langPrefix, "/", "", 1)
-						// linux-i686/ becomes [linux, i686]
-						target := strings.Replace(platformPrefix, "/", "", 1)
-						osArch := strings.SplitN(target, "-", 2)
-						os := osArch[0]
-						arch := osArch[len(osArch)-1]
-
 						select {
-						case downloads <- release{url, "", version, target, os, arch, lang, "", file.Name}:
+						case downloads <- release{
+							Url:      rootUrl + versionPrefix + targetPrefix + langPrefix + file.Name,
+							BuildID:  "unknown",
+							Version:  version,
+							Target:   target,
+							Lang:     lang,
+							Channel:  "unknown",
+							Filename: file.Name}:
 						case <-done:
 							errc <- errors.New("walk canceled")
 							return
@@ -188,7 +190,7 @@ func download(url string, output string) (err error) {
 	return nil
 }
 
-func extract(path string, output string) (paths []string, err error) {
+func extract(path string, pattern string, output string) (paths []string, err error) {
 	reader, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -198,7 +200,6 @@ func extract(path string, output string) (paths []string, err error) {
 	bz2Reader := bzip2.NewReader(reader)
 	tarReader := tar.NewReader(bz2Reader)
 
-	var results []string
 	for {
 		header, err := tarReader.Next()
 		if err != nil {
@@ -213,8 +214,8 @@ func extract(path string, output string) (paths []string, err error) {
 		path := filepath.Join(output, header.Name)
 		info := header.FileInfo()
 
-		if match, _ := regexp.MatchString("browser/features/.+\\.xpi", header.Name); match {
-			if err = os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+		if match, _ := regexp.MatchString(pattern, header.Name); match {
+			if err = os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 				return nil, err
 			}
 			file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
@@ -226,10 +227,25 @@ func extract(path string, output string) (paths []string, err error) {
 			if err != nil {
 				return nil, err
 			}
-			results = append(results, path)
+			paths = append(paths, path)
 		}
 	}
-	return results, nil
+	return paths, nil
+}
+
+func appMetadata(path string, info *release) (err error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	re := regexp.MustCompile("BuildID=(.+)\\n.*SourceRepository=.+/releases/mozilla-(.+)\\n")
+	match := re.FindStringSubmatch(string(data))
+	if len(match) < 2 {
+		return errors.New("Could not read metadata")
+	}
+	info.BuildID = match[1]
+	info.Channel = match[2]
+	return nil
 }
 
 func addonVersion(path string) (result *systemaddon, err error) {
@@ -279,9 +295,6 @@ func addonVersion(path string) (result *systemaddon, err error) {
 
 func fetchUpdates(release release, builtins []systemaddon) (results []systemaddon, err error) {
 	// https://gecko.readthedocs.io/en/latest/toolkit/mozapps/extensions/addon-manager/SystemAddons.html#system-add-on-updates
-	// https://aus5.mozilla.org/update/3/SystemAddons/{VERSION}/{BUILD_ID}/{BUILD_TARGET}/{LOCALE}/}{CHANNEL}/{OS_VERSION}/{DISTRIBUTION}/{DISTRIBUTION_VERSION}/update.xml"
-	// https://aus5.mozilla.org/update/3/Firefox/29.0a2/20140312004001/Linux_x86-gcc3/sr/aurora/default/default/default/update.xml
-
 	url := strings.Replace(AUS_URL, "{VERSION}", release.Version, 1)
 	url = strings.Replace(url, "{BUILD_ID}", release.BuildID, 1)
 	url = strings.Replace(url, "{BUILD_TARGET}", release.Target, 1)
@@ -291,23 +304,7 @@ func fetchUpdates(release release, builtins []systemaddon) (results []systemaddo
 	url = strings.Replace(url, "{DISTRIBUTION}", "default", 1)
 	url = strings.Replace(url, "{DISTRIBUTION_VERSION}", "default", 1)
 
-	// VERSION
-	//     Firefox version number
-	// BUILD_ID
-	//     Build ID
-	// BUILD_TARGET
-	//     Build target
-	// LOCALE
-	//     Build locale
-	// CHANNEL
-	//     Update channel
-	// OS_VERSION
-	//     OS Version
-	// DISTRIBUTION
-	//     Firefox Distribution
-	// DISTRIBUTION_VERSION
-	//     Firefox Distribution version
-
+	fmt.Println("Fetch updates info", url)
 	client := http.Client{}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -321,6 +318,10 @@ func fetchUpdates(release release, builtins []systemaddon) (results []systemaddo
 	if getErr != nil {
 		return nil, getErr
 	}
+	if res.StatusCode != 200 {
+		return nil, errors.New("Could not fetch updates list")
+	}
+
 	body, readErr := ioutil.ReadAll(res.Body)
 	if readErr != nil {
 		return nil, readErr
@@ -334,15 +335,16 @@ func fetchUpdates(release release, builtins []systemaddon) (results []systemaddo
 	//   </addons>
 	// </updates>
 	type addon struct {
-		ID      string `xml:"id,attr"`
-		Version string `xml:"version,attr"`
+		XMLName xml.Name `xml:"addon"`
+		ID      string   `xml:"id,attr"`
+		Version string   `xml:"version,attr"`
 	}
 	type updates struct {
 		XMLName xml.Name `xml:"updates"`
-		Addons  []addon  `xml:"addon"`
+		Addons  []addon  `xml:"addons>addon"`
 	}
 	updatesList := updates{}
-	if err = json.Unmarshal(body, &updatesList); err != nil {
+	if err = xml.Unmarshal(body, &updatesList); err != nil {
 		return nil, err
 	}
 	for _, updated := range updatesList.Addons {
@@ -357,42 +359,60 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 	go func() {
 		defer close(errc)
 		for release := range releases {
-			fmt.Println("Inspect release", release)
 
-			filename := release.Platform + "-" + release.Arch + "-" + release.Lang + "-" + release.Filename
+			filename := filepath.Join(release.Target, release.Lang, release.Filename)
+			if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+				errc <- err
+				return
+			}
 
 			if _, err := os.Stat(filename); os.IsNotExist(err) {
 				fmt.Println("Download", filename)
 				err := download(release.Url, filename)
 				if err != nil {
 					errc <- err
+					return
 				}
 			}
 
-			dest := release.Platform + "-" + release.Arch + "-" + release.Lang + "-" + release.Version
-			if err := os.MkdirAll(dest, 0755); err != nil {
-				errc <- err
-			}
-			addons, err := extract(filename, dest)
+			fmt.Println("Extract release", filename)
+
+			dir, err := ioutil.TempDir("", "systemaddons-versions")
 			if err != nil {
 				errc <- err
+				return
+			}
+			defer os.RemoveAll(dir)
+
+			extracted, err := extract(filename, "(application.ini|browser/features/.+\\.xpi)$", dir)
+			if err != nil {
+				errc <- err
+				return
 			}
 
 			var builtins []systemaddon
-			for _, addon := range addons {
-				fmt.Println("Inspect addon", addon)
-				addon, err := addonVersion(addon)
-				if err != nil {
-					errc <- err
+			for _, path := range extracted {
+				if strings.HasSuffix(path, ".xpi") {
+					fmt.Println("Inspect addon", path)
+					addon, err := addonVersion(path)
+					if err != nil {
+						errc <- err
+						return
+					}
+					builtins = append(builtins, *addon)
+				} else {
+					fmt.Println("Read build metadata", path)
+					if err = appMetadata(path, &release); err != nil {
+						errc <- err
+						return
+					}
 				}
-				builtins = append(builtins, *addon)
 			}
-
-			// XXX: remove dir
 
 			updates, err := fetchUpdates(release, builtins)
 			if err != nil {
 				errc <- err
+				return
 			}
 
 			infos := releaseinfo{release, builtins, updates}
@@ -408,10 +428,45 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 	return errc
 }
 
+func publish(serverUrl string, authHeader string, info releaseinfo) (err error) {
+	hasher := md5.New()
+	hasher.Write([]byte(info.Release.Url))
+	recordId := hex.EncodeToString(hasher.Sum(nil))
+
+	url := serverUrl + "/buckets/systemaddons/collections/versions/records/" + recordId
+
+	client := http.Client{}
+
+	type putbody struct {
+		Data releaseinfo `json:"data"`
+	}
+	infobody := putbody{info}
+	body, err := json.Marshal(infobody)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "systemaddons-versions")
+	req.Header.Set("If-None-Match", "*")
+	req.Header.Set("Authorization", authHeader)
+
+	res, putErr := client.Do(req)
+	if putErr != nil {
+		return putErr
+	}
+	if (res.StatusCode != 201) && (res.StatusCode != 412) {
+		return errors.New("Could not publish release info")
+	}
+	return nil
+}
+
 func main() {
 
 	done := make(chan struct{})
-	defer close(done)
 
 	releases, errc := walkReleases(done, DELIVERY_URL)
 
@@ -435,9 +490,13 @@ func main() {
 	}()
 
 	for r := range results {
-		fmt.Println("Done", r)
+		err := publish(KINTO_URL, KINTO_AUTH, r)
+		if err != nil {
+			panic(err)
+		}
 	}
 	if err := <-errc; err != nil {
 		panic(err)
 	}
+	fmt.Println("Done")
 }
