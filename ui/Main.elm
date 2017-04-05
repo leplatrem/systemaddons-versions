@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Set
 import Kinto
 import Json.Decode as Decode
 import Html
@@ -31,6 +32,10 @@ type alias ReleaseDetails =
     }
 
 
+type alias Channel =
+    String
+
+
 type alias Release =
     { builtins : List SystemAddon
     , updates : Maybe (List SystemAddon)
@@ -40,13 +45,23 @@ type alias Release =
     }
 
 
+type alias Filters =
+    { channels : List String
+    }
+
+
 type alias Model =
-    { releases : List Release }
+    { releases : List Release
+    , channels : List Channel
+    , filters : Filters
+    , filteredReleases : List Release
+    }
 
 
 type Msg
     = NoOp
     | ReleasesFetched (Result Kinto.Error (List Release))
+    | ToggleChannelFilter Channel
 
 
 decodeSystemAddon : Decode.Decoder SystemAddon
@@ -100,7 +115,15 @@ getReleaseList =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { releases = [] }, getReleaseList )
+    ( { releases = []
+      , filteredReleases = []
+      , channels = []
+      , filters =
+            { channels = []
+            }
+      }
+    , getReleaseList
+    )
 
 
 subscriptions : Model -> Sub Msg
@@ -138,7 +161,7 @@ joinBuiltinsUpdates : List SystemAddon -> Maybe (List SystemAddon) -> List Syste
 joinBuiltinsUpdates builtins updates =
     builtinVersions builtins
         |> updateVersions updates
-            |> List.sortBy .id
+        |> List.sortBy .id
 
 
 builtinVersions : List SystemAddon -> List SystemAddonVersions
@@ -217,10 +240,66 @@ viewRelease { details, builtins, updates } =
         ]
 
 
+viewFilters : Model -> Html.Html Msg
+viewFilters model =
+    let
+        channelView channel =
+            Html.li []
+                [ Html.label []
+                    [ Html.input
+                        [ Html.Attributes.type_ "checkbox"
+                        , Html.Attributes.value channel
+                        , Html.Events.onClick <| ToggleChannelFilter channel
+                        , Html.Attributes.checked <| hasChannelFilter model channel
+                        ]
+                        []
+                    , Html.text channel
+                    ]
+                ]
+    in
+        Html.div []
+            [ Html.h2 [] [ Html.text "Filters" ]
+            , Html.h3 [] [ Html.text "Channels" ]
+            , Html.ul [] <| List.map channelView model.channels
+            ]
+
+
 view : Model -> Html.Html Msg
 view model =
-    Html.div [] <|
-        List.map viewRelease model.releases
+    Html.div []
+        [ viewFilters model
+        , Html.div [] <| List.map viewRelease model.filteredReleases
+        ]
+
+
+extractChannels : List Release -> List Channel
+extractChannels releaseList =
+    List.map (.details >> .channel) releaseList
+        |> Set.fromList
+        |> Set.toList
+
+
+hasChannelFilter : Model -> Channel -> Bool
+hasChannelFilter model channel =
+    List.any (\x -> x == channel) model.filters.channels
+
+
+filterReleaseChannels : Model -> Channel -> Model
+filterReleaseChannels model channel =
+    let
+        channels =
+            if hasChannelFilter model channel then
+                List.filter (\x -> x /= channel) model.filters.channels
+            else
+                channel :: model.filters.channels
+    in
+        { model
+            | filters = { channels = channels }
+            , filteredReleases =
+                List.filter
+                    (\r -> List.member r.details.channel channels)
+                    model.releases
+        }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -229,15 +308,30 @@ update message model =
         ReleasesFetched result ->
             case result of
                 Ok releases ->
-                    ( { model | releases = releases }, Cmd.none )
+                    let
+                        channels =
+                            extractChannels releases
+                    in
+                        ( { model
+                            | releases = releases
+                            , filteredReleases = releases
+                            , channels = channels
+                            , filters = { channels = channels }
+                          }
+                        , Cmd.none
+                        )
 
                 Err err ->
                     Debug.crash "crash"
+
+        ToggleChannelFilter channel ->
+            ( filterReleaseChannels model channel, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
 
 
+main : Program Never Model Msg
 main =
     Html.program
         { init = init
