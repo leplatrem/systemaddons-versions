@@ -234,7 +234,7 @@ update message model =
                 Err err ->
                     Debug.crash "crash"
 
-        _ ->
+        NoOp ->
             ( model, Cmd.none )
 
 
