@@ -13,7 +13,7 @@ type alias SystemAddon =
     }
 
 
-type alias SystemAddonState =
+type alias SystemAddonVersions =
     { id : String
     , builtin : Maybe String
     , update : Maybe String
@@ -134,19 +134,56 @@ viewReleaseDetails details =
         ]
 
 
-joinBuiltinsUpdates : List SystemAddon -> Maybe (List SystemAddon) -> List SystemAddonState
+joinBuiltinsUpdates : List SystemAddon -> Maybe (List SystemAddon) -> List SystemAddonVersions
 joinBuiltinsUpdates builtins updates =
-    -- TODO:
-    -- [{id: "a", version: "1.0"}]
-    -- [{id: "a", version: "1.5"}, {id: "b", version: "3.0"}]
-    -- --> [{id: "a", builtin: "1.0", update: "1.5"},
-    --      {id: "b", builtin: Nothing, update: "3.0"}]
-    -- > Or better data model ?
-    List.map (\a -> SystemAddonState a.id (Just a.version) Nothing) builtins
+    builtinVersions builtins
+        |> updateVersions updates
+            |> List.sortBy .id
 
 
-viewSystemAddonStateRow : SystemAddonState -> Html.Html Msg
-viewSystemAddonStateRow addon =
+builtinVersions : List SystemAddon -> List SystemAddonVersions
+builtinVersions builtins =
+    List.map (\a -> SystemAddonVersions a.id (Just a.version) Nothing) builtins
+
+
+updateVersions : Maybe (List SystemAddon) -> List SystemAddonVersions -> List SystemAddonVersions
+updateVersions updates builtins =
+    let
+        uupdates =
+            Maybe.withDefault [] updates
+
+        mergeVersion : SystemAddonVersions -> SystemAddon -> SystemAddonVersions
+        mergeVersion b u =
+            SystemAddonVersions b.id b.builtin (Just u.version)
+
+        hasBuiltin : List SystemAddonVersions -> SystemAddon -> Bool
+        hasBuiltin addons addon =
+            List.any (\i -> i.id == addon.id) addons
+
+        addToBuiltin : List SystemAddonVersions -> SystemAddon -> List SystemAddonVersions
+        addToBuiltin addons addon =
+            List.map
+                (\i ->
+                    if i.id == addon.id then
+                        mergeVersion i addon
+                    else
+                        i
+                )
+                addons
+    in
+        List.foldr
+            (\a acc ->
+                if hasBuiltin acc a then
+                    addToBuiltin acc a
+                else
+                    List.append acc [ SystemAddonVersions a.id Nothing (Just a.version) ]
+            )
+            builtins
+            uupdates
+
+
+viewSystemAddonVersionsRow : SystemAddonVersions -> Html.Html Msg
+viewSystemAddonVersionsRow addon =
     Html.tr []
         [ Html.td [] [ Html.text addon.id ]
         , Html.td [] [ Html.text <| Maybe.withDefault "" addon.builtin ]
@@ -154,8 +191,8 @@ viewSystemAddonStateRow addon =
         ]
 
 
-viewSystemAddons : List SystemAddonState -> Html.Html Msg
-viewSystemAddons addons =
+viewSystemAddons : List SystemAddon -> Maybe (List SystemAddon) -> Html.Html Msg
+viewSystemAddons builtins updates =
     Html.table []
         [ Html.thead []
             [ Html.td [] [ Html.text "Id" ]
@@ -163,18 +200,19 @@ viewSystemAddons addons =
             , Html.td [] [ Html.text "Updated" ]
             ]
         , Html.tbody [] <|
-            List.map viewSystemAddonStateRow addons
+            List.map viewSystemAddonVersionsRow <|
+                joinBuiltinsUpdates builtins updates
         ]
 
 
 viewRelease : Release -> Html.Html Msg
-viewRelease release =
+viewRelease { details, builtins, updates } =
     Html.div []
-        [ Html.h2 [] [ Html.text release.details.filename ]
-        , viewReleaseDetails release.details
+        [ Html.h2 [] [ Html.text details.filename ]
+        , viewReleaseDetails details
         , Html.dl []
             [ Html.dt [] [ Html.text "System Addons" ]
-            , Html.dd [] [ viewSystemAddons <| joinBuiltinsUpdates release.builtins release.updates ]
+            , Html.dd [] [ viewSystemAddons builtins updates ]
             ]
         ]
 

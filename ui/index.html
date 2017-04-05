@@ -10081,8 +10081,8 @@ var _user$project$Main$update = F2(
 				return _elm_lang$core$Native_Utils.crashCase(
 					'Main',
 					{
-						start: {line: 192, column: 13},
-						end: {line: 197, column: 40}
+						start: {line: 230, column: 13},
+						end: {line: 235, column: 40}
 					},
 					_p1)('crash');
 			}
@@ -10090,7 +10090,7 @@ var _user$project$Main$update = F2(
 			return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 		}
 	});
-var _user$project$Main$viewSystemAddonStateRow = function (addon) {
+var _user$project$Main$viewSystemAddonVersionsRow = function (addon) {
 	return A2(
 		_elm_lang$html$Html$tr,
 		{ctor: '[]'},
@@ -10128,59 +10128,6 @@ var _user$project$Main$viewSystemAddonStateRow = function (addon) {
 						}),
 					_1: {ctor: '[]'}
 				}
-			}
-		});
-};
-var _user$project$Main$viewSystemAddons = function (addons) {
-	return A2(
-		_elm_lang$html$Html$table,
-		{ctor: '[]'},
-		{
-			ctor: '::',
-			_0: A2(
-				_elm_lang$html$Html$thead,
-				{ctor: '[]'},
-				{
-					ctor: '::',
-					_0: A2(
-						_elm_lang$html$Html$td,
-						{ctor: '[]'},
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html$text('Id'),
-							_1: {ctor: '[]'}
-						}),
-					_1: {
-						ctor: '::',
-						_0: A2(
-							_elm_lang$html$Html$td,
-							{ctor: '[]'},
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html$text('Built-in'),
-								_1: {ctor: '[]'}
-							}),
-						_1: {
-							ctor: '::',
-							_0: A2(
-								_elm_lang$html$Html$td,
-								{ctor: '[]'},
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html$text('Updated'),
-									_1: {ctor: '[]'}
-								}),
-							_1: {ctor: '[]'}
-						}
-					}
-				}),
-			_1: {
-				ctor: '::',
-				_0: A2(
-					_elm_lang$html$Html$tbody,
-					{ctor: '[]'},
-					A2(_elm_lang$core$List$map, _user$project$Main$viewSystemAddonStateRow, addons)),
-				_1: {ctor: '[]'}
 			}
 		});
 };
@@ -10351,24 +10298,146 @@ var _user$project$Main$decodeSystemAddon = A3(
 	_user$project$Main$SystemAddon,
 	A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'version', _elm_lang$core$Json_Decode$string));
-var _user$project$Main$SystemAddonState = F3(
+var _user$project$Main$SystemAddonVersions = F3(
 	function (a, b, c) {
 		return {id: a, builtin: b, update: c};
+	});
+var _user$project$Main$builtinVersions = function (builtins) {
+	return A2(
+		_elm_lang$core$List$map,
+		function (a) {
+			return A3(
+				_user$project$Main$SystemAddonVersions,
+				a.id,
+				_elm_lang$core$Maybe$Just(a.version),
+				_elm_lang$core$Maybe$Nothing);
+		},
+		builtins);
+};
+var _user$project$Main$updateVersions = F2(
+	function (updates, builtins) {
+		var hasBuiltin = F2(
+			function (addons, addon) {
+				return A2(
+					_elm_lang$core$List$any,
+					function (i) {
+						return _elm_lang$core$Native_Utils.eq(i.id, addon.id);
+					},
+					addons);
+			});
+		var mergeVersion = F2(
+			function (b, u) {
+				return A3(
+					_user$project$Main$SystemAddonVersions,
+					b.id,
+					b.builtin,
+					_elm_lang$core$Maybe$Just(u.version));
+			});
+		var updateItem = F2(
+			function (addons, addon) {
+				return A2(
+					_elm_lang$core$List$map,
+					function (i) {
+						return _elm_lang$core$Native_Utils.eq(i.id, addon.id) ? A2(mergeVersion, i, addon) : i;
+					},
+					addons);
+			});
+		var uupdates = A2(
+			_elm_lang$core$Maybe$withDefault,
+			{ctor: '[]'},
+			updates);
+		return A3(
+			_elm_lang$core$List$foldr,
+			F2(
+				function (a, acc) {
+					return A2(hasBuiltin, acc, a) ? A2(updateItem, acc, a) : A2(
+						_elm_lang$core$List$append,
+						acc,
+						{
+							ctor: '::',
+							_0: A3(
+								_user$project$Main$SystemAddonVersions,
+								a.id,
+								_elm_lang$core$Maybe$Nothing,
+								_elm_lang$core$Maybe$Just(a.version)),
+							_1: {ctor: '[]'}
+						});
+				}),
+			builtins,
+			uupdates);
 	});
 var _user$project$Main$joinBuiltinsUpdates = F2(
 	function (builtins, updates) {
 		return A2(
-			_elm_lang$core$List$map,
-			function (a) {
-				return A3(
-					_user$project$Main$SystemAddonState,
-					a.id,
-					_elm_lang$core$Maybe$Just(a.version),
-					_elm_lang$core$Maybe$Nothing);
+			_elm_lang$core$List$sortBy,
+			function (_) {
+				return _.id;
 			},
-			builtins);
+			A2(
+				_user$project$Main$updateVersions,
+				updates,
+				_user$project$Main$builtinVersions(builtins)));
 	});
-var _user$project$Main$viewRelease = function (release) {
+var _user$project$Main$viewSystemAddons = F2(
+	function (builtins, updates) {
+		return A2(
+			_elm_lang$html$Html$table,
+			{ctor: '[]'},
+			{
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$thead,
+					{ctor: '[]'},
+					{
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$td,
+							{ctor: '[]'},
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html$text('Id'),
+								_1: {ctor: '[]'}
+							}),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$td,
+								{ctor: '[]'},
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html$text('Built-in'),
+									_1: {ctor: '[]'}
+								}),
+							_1: {
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$td,
+									{ctor: '[]'},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text('Updated'),
+										_1: {ctor: '[]'}
+									}),
+								_1: {ctor: '[]'}
+							}
+						}
+					}),
+				_1: {
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$tbody,
+						{ctor: '[]'},
+						A2(
+							_elm_lang$core$List$map,
+							_user$project$Main$viewSystemAddonVersionsRow,
+							A2(_user$project$Main$joinBuiltinsUpdates, builtins, updates))),
+					_1: {ctor: '[]'}
+				}
+			});
+	});
+var _user$project$Main$viewRelease = function (_p3) {
+	var _p4 = _p3;
+	var _p5 = _p4.details;
 	return A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
@@ -10379,12 +10448,12 @@ var _user$project$Main$viewRelease = function (release) {
 				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(release.details.filename),
+					_0: _elm_lang$html$Html$text(_p5.filename),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
 				ctor: '::',
-				_0: _user$project$Main$viewReleaseDetails(release.details),
+				_0: _user$project$Main$viewReleaseDetails(_p5),
 				_1: {
 					ctor: '::',
 					_0: A2(
@@ -10407,8 +10476,7 @@ var _user$project$Main$viewRelease = function (release) {
 									{ctor: '[]'},
 									{
 										ctor: '::',
-										_0: _user$project$Main$viewSystemAddons(
-											A2(_user$project$Main$joinBuiltinsUpdates, release.builtins, release.updates)),
+										_0: A2(_user$project$Main$viewSystemAddons, _p4.builtins, _p4.updates),
 										_1: {ctor: '[]'}
 									}),
 								_1: {ctor: '[]'}
