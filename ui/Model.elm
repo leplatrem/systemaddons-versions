@@ -29,11 +29,16 @@ type alias Target =
     String
 
 
+type alias Version =
+    String
+
+
 type Msg
     = ReleasesFetched (Result Kinto.Error (List Release))
     | ToggleChannelFilter Channel Bool
     | ToggleLangFilter Lang Bool
     | ToggleTargetFilter Target Bool
+    | ToggleVersionFilter Version Bool
 
 
 type alias SystemAddon =
@@ -77,6 +82,7 @@ type alias Filters =
     { channels : FilterSet
     , langs : FilterSet
     , targets : FilterSet
+    , versions : FilterSet
     }
 
 
@@ -93,6 +99,7 @@ init =
         { channels = Dict.fromList []
         , langs = Dict.fromList []
         , targets = Dict.fromList []
+        , versions = Dict.fromList []
         }
     }
         ! [ getReleaseList ]
@@ -147,10 +154,28 @@ getReleaseList =
         |> Kinto.send ReleasesFetched
 
 
-extractFilterSet : (Release -> String) -> List Release -> Dict.Dict Lang Bool
+extractFilterSet : (Release -> String) -> List Release -> Dict.Dict String Bool
 extractFilterSet accessor releases =
     List.map (accessor >> (\c -> ( c, True ))) releases
         |> Dict.fromList
+
+
+extractVersions : List Release -> Dict.Dict String Bool
+extractVersions releases =
+    -- TODO: sort desc
+    let
+        extractVersion ( version, x ) =
+            case (String.split "." version) of
+                v :: _ ->
+                    ( v, x )
+
+                _ ->
+                    ( "None", x )
+    in
+        extractFilterSet (.details >> .filename) releases
+            |> Dict.toList
+            |> List.map extractVersion
+            |> Dict.fromList
 
 
 processFilter : FilterSet -> (Release -> String) -> List Release -> List Release
@@ -163,12 +188,24 @@ processFilter filterSet accessor releases =
         releases
 
 
+processFilterVersions : FilterSet -> List Release -> List Release
+processFilterVersions filterSet releases =
+    List.filter
+        (\{ details } ->
+            List.any
+                (\f -> String.startsWith f details.filename)
+                (Dict.filter (\k v -> v) filterSet |> Dict.keys)
+        )
+        releases
+
+
 filterReleases : Model -> List Release
 filterReleases { filters, releases } =
     releases
         |> processFilter filters.channels (.details >> .channel)
         |> processFilter filters.langs (.details >> .lang)
         |> processFilter filters.targets (.details >> .target)
+        |> processFilterVersions filters.versions
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -183,6 +220,7 @@ update message ({ filters } as model) =
                             { channels = extractFilterSet (.details >> .channel) releases
                             , langs = extractFilterSet (.details >> .lang) releases
                             , targets = extractFilterSet (.details >> .target) releases
+                            , versions = extractVersions releases
                             }
                     }
                         ! []
@@ -202,20 +240,27 @@ update message ({ filters } as model) =
 
         ToggleLangFilter lang active ->
             let
-                langs =
-                    Dict.update lang (\_ -> Just active) model.filters.langs
-
                 newFilters =
-                    { filters | langs = langs }
+                    { filters
+                        | langs = Dict.update lang (\_ -> Just active) filters.langs
+                    }
             in
                 { model | filters = newFilters } ! []
 
         ToggleTargetFilter target active ->
             let
-                targets =
-                    Dict.update target (\_ -> Just active) model.filters.targets
-
                 newFilters =
-                    { filters | targets = targets }
+                    { filters
+                        | targets = Dict.update target (\_ -> Just active) filters.targets
+                    }
+            in
+                { model | filters = newFilters } ! []
+
+        ToggleVersionFilter version active ->
+            let
+                newFilters =
+                    { filters
+                        | versions = Dict.update version (\_ -> Just active) filters.versions
+                    }
             in
                 { model | filters = newFilters } ! []

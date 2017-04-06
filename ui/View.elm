@@ -158,9 +158,10 @@ filterSetForm filterSet label handler =
 viewFilters : Model -> Html Msg
 viewFilters { filters } =
     div []
-        [ filterSetForm filters.channels "Channels" ToggleChannelFilter
-        , filterSetForm filters.langs "Langs" ToggleLangFilter
+        [ filterSetForm filters.versions "Versions" ToggleVersionFilter
         , filterSetForm filters.targets "Targets" ToggleTargetFilter
+        , filterSetForm filters.channels "Channels" ToggleChannelFilter
+        , filterSetForm filters.langs "Langs" ToggleLangFilter
         ]
 
 
