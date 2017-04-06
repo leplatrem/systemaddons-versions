@@ -51,7 +51,7 @@ type alias ReleaseDetails =
 
 type alias Release =
     { builtins : List SystemAddon
-    , updates : Maybe (List SystemAddon)
+    , updates : List SystemAddon
     , details : ReleaseDetails
     , id : String
     , last_modified : Int
@@ -100,7 +100,7 @@ decodeRelease : Decode.Decoder Release
 decodeRelease =
     Decode.map5 Release
         (Decode.field "builtins" <| Decode.list decodeSystemAddon)
-        (Decode.field "updates" <| Decode.maybe <| Decode.list decodeSystemAddon)
+        (Decode.field "updates" <| Decode.list decodeSystemAddon)
         (Decode.field "release" decodeReleaseDetails)
         (Decode.field "id" Decode.string)
         (Decode.field "last_modified" Decode.int)

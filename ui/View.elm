@@ -40,7 +40,7 @@ viewReleaseDetails details =
         ]
 
 
-joinBuiltinsUpdates : List SystemAddon -> Maybe (List SystemAddon) -> List SystemAddonVersions
+joinBuiltinsUpdates : List SystemAddon -> List SystemAddon -> List SystemAddonVersions
 joinBuiltinsUpdates builtins updates =
     builtinVersions builtins
         |> updateVersions updates
@@ -52,12 +52,9 @@ builtinVersions builtins =
     List.map (\a -> SystemAddonVersions a.id (Just a.version) Nothing) builtins
 
 
-updateVersions : Maybe (List SystemAddon) -> List SystemAddonVersions -> List SystemAddonVersions
+updateVersions : List SystemAddon -> List SystemAddonVersions -> List SystemAddonVersions
 updateVersions updates builtins =
     let
-        uupdates =
-            Maybe.withDefault [] updates
-
         mergeVersion : SystemAddonVersions -> SystemAddon -> SystemAddonVersions
         mergeVersion b u =
             SystemAddonVersions b.id b.builtin (Just u.version)
@@ -85,7 +82,7 @@ updateVersions updates builtins =
                     List.append acc [ SystemAddonVersions a.id Nothing (Just a.version) ]
             )
             builtins
-            uupdates
+            updates
 
 
 viewSystemAddonVersionsRow : SystemAddonVersions -> Html Msg
@@ -97,7 +94,7 @@ viewSystemAddonVersionsRow addon =
         ]
 
 
-viewSystemAddons : List SystemAddon -> Maybe (List SystemAddon) -> Html Msg
+viewSystemAddons : List SystemAddon -> List SystemAddon -> Html Msg
 viewSystemAddons builtins updates =
     table [ class "table table-stripped table-condensed" ]
         [ thead []
