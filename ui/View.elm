@@ -18,26 +18,24 @@ import Model
 
 viewReleaseDetails : ReleaseDetails -> Html Msg
 viewReleaseDetails details =
-    div []
-        [ dl []
-            [ dt [] [ text "URL" ]
-            , dd [] [ text details.url ]
+    table [ class "table table-condensed" ]
+        [ thead []
+            [ tr []
+                [ th [] [ text "Build ID" ]
+                , th [] [ text "Target" ]
+                , th [] [ text "Lang" ]
+                , th [] [ text "Channel" ]
+                , th [] [ text "URL" ]
+                ]
             ]
-        , dl []
-            [ dt [] [ text "Build ID" ]
-            , dd [] [ text details.buildId ]
-            ]
-        , dl []
-            [ dt [] [ text "Target" ]
-            , dd [] [ text details.target ]
-            ]
-        , dl []
-            [ dt [] [ text "Lang" ]
-            , dd [] [ text details.lang ]
-            ]
-        , dl []
-            [ dt [] [ text "Channel" ]
-            , dd [] [ text details.channel ]
+        , tbody []
+            [ tr []
+                [ td [] [ text details.buildId ]
+                , td [] [ text details.target ]
+                , td [] [ text details.lang ]
+                , td [] [ text details.channel ]
+                , td [] [ a [ href details.url, title details.url ] [ text "Link" ] ]
+                ]
             ]
         ]
 
@@ -101,11 +99,13 @@ viewSystemAddonVersionsRow addon =
 
 viewSystemAddons : List SystemAddon -> Maybe (List SystemAddon) -> Html Msg
 viewSystemAddons builtins updates =
-    table []
+    table [ class "table table-stripped table-condensed" ]
         [ thead []
-            [ td [] [ text "Id" ]
-            , td [] [ text "Built-in" ]
-            , td [] [ text "Updated" ]
+            [ tr []
+                [ th [] [ text "Id" ]
+                , th [] [ text "Built-in" ]
+                , th [] [ text "Updated" ]
+                ]
             ]
         , tbody [] <|
             List.map viewSystemAddonVersionsRow <|
@@ -115,12 +115,12 @@ viewSystemAddons builtins updates =
 
 viewRelease : Release -> Html Msg
 viewRelease { details, builtins, updates } =
-    div []
-        [ h2 [] [ text details.filename ]
-        , viewReleaseDetails details
-        , dl []
-            [ dt [] [ text "System Addons" ]
-            , dd [] [ viewSystemAddons builtins updates ]
+    div [ class "panel panel-default" ]
+        [ div [ class "panel-heading" ] [ strong [] [ text details.filename ] ]
+        , div [ class "panel-body" ]
+            [ viewReleaseDetails details
+            , h4 [] [ text "System Addons" ]
+            , viewSystemAddons builtins updates
             ]
         ]
 
@@ -129,7 +129,7 @@ viewFilters : Model -> Html Msg
 viewFilters model =
     let
         channelFilter ( channel, active ) =
-            li []
+            li [ class "list-group-item" ]
                 [ label []
                     [ input
                         [ type_ "checkbox"
@@ -138,23 +138,29 @@ viewFilters model =
                         , checked active
                         ]
                         []
-                    , text channel
+                    , text <| " " ++ channel
                     ]
                 ]
 
         channels =
             model.filters.channels |> Dict.toList |> List.map channelFilter
     in
-        div []
-            [ h2 [] [ text "Filters" ]
-            , h3 [] [ text "Channels" ]
-            , ul [] <| channels
+        div [ class "panel panel-default" ]
+            [ div [ class "panel-heading" ] [ strong [] [ text "Filter channels" ] ]
+            , ul [ class "list-group" ] <| channels
             ]
 
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ viewFilters model
-        , div [] <| List.map viewRelease <| filterReleases model
+    div [ class "container" ]
+        [ div [ class "header" ]
+            [ h1 [] [ Html.text "System Addons" ]
+            ]
+        , div [ class "row" ]
+            [ div [ class "col-sm-9" ]
+                [ div [] <| List.map viewRelease <| filterReleases model
+                ]
+            , div [ class "col-sm-3" ] [ viewFilters model ]
+            ]
         ]
