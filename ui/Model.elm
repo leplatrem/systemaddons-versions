@@ -147,21 +147,9 @@ getReleaseList =
         |> Kinto.send ReleasesFetched
 
 
-extractChannels : List Release -> Dict.Dict Channel Bool
-extractChannels releaseList =
-    List.map (.details >> .channel >> (\c -> ( c, True ))) releaseList
-        |> Dict.fromList
-
-
-extractLangs : List Release -> Dict.Dict Lang Bool
-extractLangs releaseList =
-    List.map (.details >> .lang >> (\c -> ( c, True ))) releaseList
-        |> Dict.fromList
-
-
-extractTargets : List Release -> Dict.Dict Lang Bool
-extractTargets releaseList =
-    List.map (.details >> .target >> (\c -> ( c, True ))) releaseList
+extractFilterSet : (Release -> String) -> List Release -> Dict.Dict Lang Bool
+extractFilterSet accessor releases =
+    List.map (accessor >> (\c -> ( c, True ))) releases
         |> Dict.fromList
 
 
@@ -192,9 +180,9 @@ update message ({ filters } as model) =
                     { model
                         | releases = releases
                         , filters =
-                            { channels = extractChannels releases
-                            , langs = extractLangs releases
-                            , targets = extractTargets releases
+                            { channels = extractFilterSet (.details >> .channel) releases
+                            , langs = extractFilterSet (.details >> .lang) releases
+                            , targets = extractFilterSet (.details >> .target) releases
                             }
                     }
                         ! []
