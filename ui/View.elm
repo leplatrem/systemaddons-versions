@@ -7,6 +7,7 @@ import Html.Events exposing (..)
 import Model
     exposing
         ( Model
+        , FilterSet
         , Release
         , SystemAddon
         , SystemAddonVersions
@@ -138,18 +139,26 @@ filterCheckbox handler ( name, active ) =
         ]
 
 
-channelFilters : Model -> Html Msg
-channelFilters model =
+filterSetForm : FilterSet -> String -> (String -> Bool -> Msg) -> Html Msg
+filterSetForm filterSet label handler =
     let
-        channels =
-            model.filters.channels
+        filters =
+            filterSet
                 |> Dict.toList
-                |> List.map (filterCheckbox ToggleChannelFilter)
+                |> List.map (filterCheckbox handler)
     in
         div [ class "panel panel-default" ]
-            [ div [ class "panel-heading" ] [ strong [] [ text "Filter channels" ] ]
-            , ul [ class "list-group" ] <| channels
+            [ div [ class "panel-heading" ] [ strong [] [ text label ] ]
+            , ul [ class "list-group" ] <| filters
             ]
+
+
+viewFilters : Model -> Html Msg
+viewFilters { filters } =
+    div []
+        [ filterSetForm filters.channels "Channels" ToggleChannelFilter
+        , filterSetForm filters.langs "Langs" ToggleLangFilter
+        ]
 
 
 view : Model -> Html Msg
@@ -161,6 +170,6 @@ view model =
             [ div [ class "col-sm-9" ]
                 [ div [] <| List.map viewRelease <| filterReleases model ]
             , div [ class "col-sm-3" ]
-                [ channelFilters model ]
+                [ viewFilters model ]
             ]
         ]

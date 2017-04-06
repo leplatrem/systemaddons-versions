@@ -5,6 +5,7 @@ module Model
         , SystemAddon
         , SystemAddonVersions
         , ReleaseDetails
+        , FilterSet
         , Msg(..)
         , filterReleases
         , init
@@ -19,9 +20,14 @@ import Json.Decode as Decode
 type Msg
     = ReleasesFetched (Result Kinto.Error (List Release))
     | ToggleChannelFilter Channel Bool
+    | ToggleLangFilter Lang Bool
 
 
 type alias Channel =
+    String
+
+
+type alias Lang =
     String
 
 
@@ -58,8 +64,13 @@ type alias Release =
     }
 
 
+type alias FilterSet =
+    Dict.Dict String Bool
+
+
 type alias Filters =
-    { channels : Dict.Dict Channel Bool
+    { channels : FilterSet
+    , langs : FilterSet
     }
 
 
@@ -72,7 +83,10 @@ type alias Model =
 init : ( Model, Cmd Msg )
 init =
     { releases = []
-    , filters = { channels = Dict.fromList [] }
+    , filters =
+        { channels = Dict.fromList []
+        , langs = Dict.fromList []
+        }
     }
         ! [ getReleaseList ]
 
@@ -132,25 +146,41 @@ extractChannels releaseList =
         |> Dict.fromList
 
 
-filterReleases : Model -> List Release
-filterReleases { filters, releases } =
+extractLangs : List Release -> Dict.Dict Lang Bool
+extractLangs releaseList =
+    List.map (.details >> .lang >> (\c -> ( c, True ))) releaseList
+        |> Dict.fromList
+
+
+processFilter : FilterSet -> (Release -> String) -> List Release -> List Release
+processFilter filterSet accessor releases =
     List.filter
-        (\{ details } ->
-            Dict.get details.channel filters.channels
+        (\release ->
+            Dict.get (accessor release) filterSet
                 |> Maybe.withDefault True
         )
         releases
 
 
+filterReleases : Model -> List Release
+filterReleases { filters, releases } =
+    releases
+        |> processFilter filters.channels (.details >> .channel)
+        |> processFilter filters.langs (.details >> .lang)
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
-update message model =
+update message ({ filters } as model) =
     case message of
         ReleasesFetched result ->
             case result of
                 Ok releases ->
                     { model
                         | releases = releases
-                        , filters = { channels = extractChannels releases }
+                        , filters =
+                            { channels = extractChannels releases
+                            , langs = extractLangs releases
+                            }
                     }
                         ! []
 
@@ -158,10 +188,21 @@ update message model =
                     Debug.crash "Unhandled Kinto error"
 
         ToggleChannelFilter channel active ->
-            { model
-                | filters =
-                    { channels =
-                        Dict.update channel (\_ -> Just active) model.filters.channels
-                    }
-            }
-                ! []
+            let
+                channels =
+                    Dict.update channel (\_ -> Just active) model.filters.channels
+
+                newFilters =
+                    { filters | channels = channels }
+            in
+                { model | filters = newFilters } ! []
+
+        ToggleLangFilter lang active ->
+            let
+                langs =
+                    Dict.update lang (\_ -> Just active) model.filters.langs
+
+                newFilters =
+                    { filters | langs = langs }
+            in
+                { model | filters = newFilters } ! []
