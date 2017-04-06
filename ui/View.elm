@@ -126,15 +126,17 @@ viewRelease { details, builtins, updates } =
 filterCheckbox : (String -> Bool -> Msg) -> ( String, Bool ) -> Html Msg
 filterCheckbox handler ( name, active ) =
     li [ class "list-group-item" ]
-        [ label []
-            [ input
-                [ type_ "checkbox"
-                , value name
-                , onCheck <| handler name
-                , checked active
+        [ div [ class "checkbox" ]
+            [ label []
+                [ input
+                    [ type_ "checkbox"
+                    , value name
+                    , onCheck <| handler name
+                    , checked active
+                    ]
+                    []
+                , text <| " " ++ name
                 ]
-                []
-            , text <| " " ++ name
             ]
         ]
 
