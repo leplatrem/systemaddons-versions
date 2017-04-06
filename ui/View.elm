@@ -158,6 +158,7 @@ viewFilters { filters } =
     div []
         [ filterSetForm filters.channels "Channels" ToggleChannelFilter
         , filterSetForm filters.langs "Langs" ToggleLangFilter
+        , filterSetForm filters.targets "Targets" ToggleTargetFilter
         ]
 
 

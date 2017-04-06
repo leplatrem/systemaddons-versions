@@ -17,18 +17,23 @@ import Kinto
 import Json.Decode as Decode
 
 
-type Msg
-    = ReleasesFetched (Result Kinto.Error (List Release))
-    | ToggleChannelFilter Channel Bool
-    | ToggleLangFilter Lang Bool
-
-
 type alias Channel =
     String
 
 
 type alias Lang =
     String
+
+
+type alias Target =
+    String
+
+
+type Msg
+    = ReleasesFetched (Result Kinto.Error (List Release))
+    | ToggleChannelFilter Channel Bool
+    | ToggleLangFilter Lang Bool
+    | ToggleTargetFilter Target Bool
 
 
 type alias SystemAddon =
@@ -71,6 +76,7 @@ type alias FilterSet =
 type alias Filters =
     { channels : FilterSet
     , langs : FilterSet
+    , targets : FilterSet
     }
 
 
@@ -86,6 +92,7 @@ init =
     , filters =
         { channels = Dict.fromList []
         , langs = Dict.fromList []
+        , targets = Dict.fromList []
         }
     }
         ! [ getReleaseList ]
@@ -152,6 +159,12 @@ extractLangs releaseList =
         |> Dict.fromList
 
 
+extractTargets : List Release -> Dict.Dict Lang Bool
+extractTargets releaseList =
+    List.map (.details >> .target >> (\c -> ( c, True ))) releaseList
+        |> Dict.fromList
+
+
 processFilter : FilterSet -> (Release -> String) -> List Release -> List Release
 processFilter filterSet accessor releases =
     List.filter
@@ -167,6 +180,7 @@ filterReleases { filters, releases } =
     releases
         |> processFilter filters.channels (.details >> .channel)
         |> processFilter filters.langs (.details >> .lang)
+        |> processFilter filters.targets (.details >> .target)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -180,6 +194,7 @@ update message ({ filters } as model) =
                         , filters =
                             { channels = extractChannels releases
                             , langs = extractLangs releases
+                            , targets = extractTargets releases
                             }
                     }
                         ! []
@@ -204,5 +219,15 @@ update message ({ filters } as model) =
 
                 newFilters =
                     { filters | langs = langs }
+            in
+                { model | filters = newFilters } ! []
+
+        ToggleTargetFilter target active ->
+            let
+                targets =
+                    Dict.update target (\_ -> Just active) model.filters.targets
+
+                newFilters =
+                    { filters | targets = targets }
             in
                 { model | filters = newFilters } ! []
