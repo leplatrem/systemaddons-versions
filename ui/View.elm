@@ -16,30 +16,6 @@ import Model
         )
 
 
-viewReleaseDetails : ReleaseDetails -> Html Msg
-viewReleaseDetails details =
-    table [ class "table table-condensed" ]
-        [ thead []
-            [ tr []
-                [ th [] [ text "Build ID" ]
-                , th [] [ text "Target" ]
-                , th [] [ text "Lang" ]
-                , th [] [ text "Channel" ]
-                , th [] [ text "URL" ]
-                ]
-            ]
-        , tbody []
-            [ tr []
-                [ td [] [ text details.buildId ]
-                , td [] [ text details.target ]
-                , td [] [ text details.lang ]
-                , td [] [ text details.channel ]
-                , td [] [ a [ href details.url, title details.url ] [ text "Link" ] ]
-                ]
-            ]
-        ]
-
-
 joinBuiltinsUpdates : List SystemAddon -> List SystemAddon -> List SystemAddonVersions
 joinBuiltinsUpdates builtins updates =
     builtinVersions builtins
@@ -85,6 +61,30 @@ updateVersions updates builtins =
             updates
 
 
+viewReleaseDetails : ReleaseDetails -> Html Msg
+viewReleaseDetails details =
+    table [ class "table table-condensed" ]
+        [ thead []
+            [ tr []
+                [ th [] [ text "Build ID" ]
+                , th [] [ text "Target" ]
+                , th [] [ text "Lang" ]
+                , th [] [ text "Channel" ]
+                , th [] [ text "URL" ]
+                ]
+            ]
+        , tbody []
+            [ tr []
+                [ td [] [ text details.buildId ]
+                , td [] [ text details.target ]
+                , td [] [ text details.lang ]
+                , td [] [ text details.channel ]
+                , td [] [ a [ href details.url, title details.url ] [ text "Link" ] ]
+                ]
+            ]
+        ]
+
+
 viewSystemAddonVersionsRow : SystemAddonVersions -> Html Msg
 viewSystemAddonVersionsRow addon =
     tr []
@@ -122,25 +122,29 @@ viewRelease { details, builtins, updates } =
         ]
 
 
-viewFilters : Model -> Html Msg
-viewFilters model =
-    let
-        channelFilter ( channel, active ) =
-            li [ class "list-group-item" ]
-                [ label []
-                    [ input
-                        [ type_ "checkbox"
-                        , value channel
-                        , onCheck <| ToggleChannelFilter channel
-                        , checked active
-                        ]
-                        []
-                    , text <| " " ++ channel
-                    ]
+filterCheckbox : (String -> Bool -> Msg) -> ( String, Bool ) -> Html Msg
+filterCheckbox handler ( name, active ) =
+    li [ class "list-group-item" ]
+        [ label []
+            [ input
+                [ type_ "checkbox"
+                , value name
+                , onCheck <| handler name
+                , checked active
                 ]
+                []
+            , text <| " " ++ name
+            ]
+        ]
 
+
+channelFilters : Model -> Html Msg
+channelFilters model =
+    let
         channels =
-            model.filters.channels |> Dict.toList |> List.map channelFilter
+            model.filters.channels
+                |> Dict.toList
+                |> List.map (filterCheckbox ToggleChannelFilter)
     in
         div [ class "panel panel-default" ]
             [ div [ class "panel-heading" ] [ strong [] [ text "Filter channels" ] ]
@@ -152,12 +156,11 @@ view : Model -> Html Msg
 view model =
     div [ class "container" ]
         [ div [ class "header" ]
-            [ h1 [] [ Html.text "System Addons" ]
-            ]
+            [ h1 [] [ Html.text "System Addons" ] ]
         , div [ class "row" ]
             [ div [ class "col-sm-9" ]
-                [ div [] <| List.map viewRelease <| filterReleases model
-                ]
-            , div [ class "col-sm-3" ] [ viewFilters model ]
+                [ div [] <| List.map viewRelease <| filterReleases model ]
+            , div [ class "col-sm-3" ]
+                [ channelFilters model ]
             ]
         ]
