@@ -1,0 +1,30 @@
+{
+  "name": "systemaddons",
+  "version": "0.0.1",
+  "description": "Firefox System Addons manager.",
+  "private": true,
+  "scripts": {
+    "build": "node_modules/.bin/elm-make Main.elm --output=build/app.js && cp index.html build/",
+    "deploy": "npm run build && node_modules/.bin/gh-pages --dist build/",
+    "live": "node_modules/.bin/elm-live Main.elm --output=app.js --debug",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leplatrem/systemaddons-versions.git"
+  },
+  "keywords": [
+    "firefox"
+  ],
+  "author": "\"Storage Team\" <storage-team@mozilla.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/leplatrem/systemaddons-versions/issues"
+  },
+  "homepage": "https://github.com/leplatrem/systemaddons-versions#readme",
+  "devDependencies": {
+    "elm": "^0.18.0",
+    "elm-live": "^2.7.4",
+    "gh-pages": "^0.12.0"
+  }
+}
