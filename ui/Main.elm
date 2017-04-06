@@ -59,14 +59,12 @@ type alias Filters =
 type alias Model =
     { releases : List Release
     , filters : Filters
-    , filteredReleases : List Release
     }
 
 
 init : ( Model, Cmd Msg )
 init =
     ( { releases = []
-      , filteredReleases = []
       , filters = { channels = Dict.fromList [] }
       }
     , getReleaseList
@@ -267,7 +265,7 @@ view : Model -> Html.Html Msg
 view model =
     Html.div []
         [ viewFilters model
-        , Html.div [] <| List.map viewRelease model.filteredReleases
+        , Html.div [] <| List.map viewRelease <| filterReleases model
         ]
 
 
@@ -280,28 +278,14 @@ extractChannels releaseList =
         |> Dict.fromList
 
 
-hasChannelFilter : Model -> Channel -> Bool
-hasChannelFilter model channel =
-    Dict.get channel model.filters.channels
-        |> Maybe.withDefault True
-
-
-filterReleaseChannels : Model -> Channel -> Bool -> Model
-filterReleaseChannels model channel active =
-    let
-        channels =
-            Dict.update channel (\_ -> Just active) model.filters.channels
-
-        filters =
-            Dict.filter (\k v -> v) channels |> Dict.keys
-    in
-        { model
-            | filters = { channels = channels }
-            , filteredReleases =
-                List.filter
-                    (\r -> List.member r.details.channel filters)
-                    model.releases
-        }
+filterReleases : Model -> List Release
+filterReleases { filters, releases } =
+    List.filter
+        (\{ details } ->
+            Dict.get details.channel filters.channels
+                |> Maybe.withDefault True
+        )
+        releases
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -310,23 +294,25 @@ update message model =
         ReleasesFetched result ->
             case result of
                 Ok releases ->
-                    let
-                        channels =
-                            extractChannels releases
-                    in
-                        ( { model
-                            | releases = releases
-                            , filteredReleases = releases
-                            , filters = { channels = channels }
-                          }
-                        , Cmd.none
-                        )
+                    ( { model
+                        | releases = releases
+                        , filters = { channels = extractChannels releases }
+                      }
+                    , Cmd.none
+                    )
 
                 Err err ->
-                    Debug.crash "crash"
+                    Debug.crash "Unhandled Kinto error"
 
         ToggleChannelFilter channel active ->
-            ( filterReleaseChannels model channel active, Cmd.none )
+            ( { model
+                | filters =
+                    { channels =
+                        Dict.update channel (\_ -> Just active) model.filters.channels
+                    }
+              }
+            , Cmd.none
+            )
 
 
 main : Program Never Model Msg
