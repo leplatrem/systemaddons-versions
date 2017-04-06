@@ -10276,7 +10276,11 @@ var _user$project$View$viewFilters = function (model) {
 		var _p2 = _p1._0;
 		return A2(
 			_elm_lang$html$Html$li,
-			{ctor: '[]'},
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html_Attributes$class('list-group-item'),
+				_1: {ctor: '[]'}
+			},
 			{
 				ctor: '::',
 				_0: A2(
@@ -10307,7 +10311,8 @@ var _user$project$View$viewFilters = function (model) {
 							{ctor: '[]'}),
 						_1: {
 							ctor: '::',
-							_0: _elm_lang$html$Html$text(_p2),
+							_0: _elm_lang$html$Html$text(
+								A2(_elm_lang$core$Basics_ops['++'], ' ', _p2)),
 							_1: {ctor: '[]'}
 						}
 					}),
@@ -10320,35 +10325,43 @@ var _user$project$View$viewFilters = function (model) {
 		_elm_lang$core$Dict$toList(model.filters.channels));
 	return A2(
 		_elm_lang$html$Html$div,
-		{ctor: '[]'},
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('panel panel-default'),
+			_1: {ctor: '[]'}
+		},
 		{
 			ctor: '::',
 			_0: A2(
-				_elm_lang$html$Html$h2,
-				{ctor: '[]'},
+				_elm_lang$html$Html$div,
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text('Filters'),
+					_0: _elm_lang$html$Html_Attributes$class('panel-heading'),
+					_1: {ctor: '[]'}
+				},
+				{
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$strong,
+						{ctor: '[]'},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text('Filter channels'),
+							_1: {ctor: '[]'}
+						}),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
 				ctor: '::',
 				_0: A2(
-					_elm_lang$html$Html$h3,
-					{ctor: '[]'},
+					_elm_lang$html$Html$ul,
 					{
 						ctor: '::',
-						_0: _elm_lang$html$Html$text('Channels'),
+						_0: _elm_lang$html$Html_Attributes$class('list-group'),
 						_1: {ctor: '[]'}
-					}),
-				_1: {
-					ctor: '::',
-					_0: A2(
-						_elm_lang$html$Html$ul,
-						{ctor: '[]'},
-						channels),
-					_1: {ctor: '[]'}
-				}
+					},
+					channels),
+				_1: {ctor: '[]'}
 			}
 		});
 };
@@ -10473,7 +10486,11 @@ var _user$project$View$viewSystemAddons = F2(
 	function (builtins, updates) {
 		return A2(
 			_elm_lang$html$Html$table,
-			{ctor: '[]'},
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html_Attributes$class('table table-stripped table-condensed'),
+				_1: {ctor: '[]'}
+			},
 			{
 				ctor: '::',
 				_0: A2(
@@ -10482,36 +10499,43 @@ var _user$project$View$viewSystemAddons = F2(
 					{
 						ctor: '::',
 						_0: A2(
-							_elm_lang$html$Html$td,
+							_elm_lang$html$Html$tr,
 							{ctor: '[]'},
 							{
 								ctor: '::',
-								_0: _elm_lang$html$Html$text('Id'),
-								_1: {ctor: '[]'}
-							}),
-						_1: {
-							ctor: '::',
-							_0: A2(
-								_elm_lang$html$Html$td,
-								{ctor: '[]'},
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html$text('Built-in'),
-									_1: {ctor: '[]'}
-								}),
-							_1: {
-								ctor: '::',
 								_0: A2(
-									_elm_lang$html$Html$td,
+									_elm_lang$html$Html$th,
 									{ctor: '[]'},
 									{
 										ctor: '::',
-										_0: _elm_lang$html$Html$text('Updated'),
+										_0: _elm_lang$html$Html$text('Id'),
 										_1: {ctor: '[]'}
 									}),
-								_1: {ctor: '[]'}
-							}
-						}
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$th,
+										{ctor: '[]'},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('Built-in'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$th,
+											{ctor: '[]'},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('Updated'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {ctor: '[]'}
+									}
+								}
+							}),
+						_1: {ctor: '[]'}
 					}),
 				_1: {
 					ctor: '::',
@@ -10528,152 +10552,164 @@ var _user$project$View$viewSystemAddons = F2(
 	});
 var _user$project$View$viewReleaseDetails = function (details) {
 	return A2(
-		_elm_lang$html$Html$div,
-		{ctor: '[]'},
+		_elm_lang$html$Html$table,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('table table-condensed'),
+			_1: {ctor: '[]'}
+		},
 		{
 			ctor: '::',
 			_0: A2(
-				_elm_lang$html$Html$dl,
+				_elm_lang$html$Html$thead,
 				{ctor: '[]'},
 				{
 					ctor: '::',
 					_0: A2(
-						_elm_lang$html$Html$dt,
-						{ctor: '[]'},
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html$text('URL'),
-							_1: {ctor: '[]'}
-						}),
-					_1: {
-						ctor: '::',
-						_0: A2(
-							_elm_lang$html$Html$dd,
-							{ctor: '[]'},
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html$text(details.url),
-								_1: {ctor: '[]'}
-							}),
-						_1: {ctor: '[]'}
-					}
-				}),
-			_1: {
-				ctor: '::',
-				_0: A2(
-					_elm_lang$html$Html$dl,
-					{ctor: '[]'},
-					{
-						ctor: '::',
-						_0: A2(
-							_elm_lang$html$Html$dt,
-							{ctor: '[]'},
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html$text('Build ID'),
-								_1: {ctor: '[]'}
-							}),
-						_1: {
-							ctor: '::',
-							_0: A2(
-								_elm_lang$html$Html$dd,
-								{ctor: '[]'},
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html$text(details.buildId),
-									_1: {ctor: '[]'}
-								}),
-							_1: {ctor: '[]'}
-						}
-					}),
-				_1: {
-					ctor: '::',
-					_0: A2(
-						_elm_lang$html$Html$dl,
+						_elm_lang$html$Html$tr,
 						{ctor: '[]'},
 						{
 							ctor: '::',
 							_0: A2(
-								_elm_lang$html$Html$dt,
+								_elm_lang$html$Html$th,
 								{ctor: '[]'},
 								{
 									ctor: '::',
-									_0: _elm_lang$html$Html$text('Target'),
+									_0: _elm_lang$html$Html$text('Build ID'),
 									_1: {ctor: '[]'}
 								}),
 							_1: {
 								ctor: '::',
 								_0: A2(
-									_elm_lang$html$Html$dd,
+									_elm_lang$html$Html$th,
 									{ctor: '[]'},
 									{
 										ctor: '::',
-										_0: _elm_lang$html$Html$text(details.target),
-										_1: {ctor: '[]'}
-									}),
-								_1: {ctor: '[]'}
-							}
-						}),
-					_1: {
-						ctor: '::',
-						_0: A2(
-							_elm_lang$html$Html$dl,
-							{ctor: '[]'},
-							{
-								ctor: '::',
-								_0: A2(
-									_elm_lang$html$Html$dt,
-									{ctor: '[]'},
-									{
-										ctor: '::',
-										_0: _elm_lang$html$Html$text('Lang'),
+										_0: _elm_lang$html$Html$text('Target'),
 										_1: {ctor: '[]'}
 									}),
 								_1: {
 									ctor: '::',
 									_0: A2(
-										_elm_lang$html$Html$dd,
+										_elm_lang$html$Html$th,
 										{ctor: '[]'},
 										{
 											ctor: '::',
-											_0: _elm_lang$html$Html$text(details.lang),
-											_1: {ctor: '[]'}
-										}),
-									_1: {ctor: '[]'}
-								}
-							}),
-						_1: {
-							ctor: '::',
-							_0: A2(
-								_elm_lang$html$Html$dl,
-								{ctor: '[]'},
-								{
-									ctor: '::',
-									_0: A2(
-										_elm_lang$html$Html$dt,
-										{ctor: '[]'},
-										{
-											ctor: '::',
-											_0: _elm_lang$html$Html$text('Channel'),
+											_0: _elm_lang$html$Html$text('Lang'),
 											_1: {ctor: '[]'}
 										}),
 									_1: {
 										ctor: '::',
 										_0: A2(
-											_elm_lang$html$Html$dd,
+											_elm_lang$html$Html$th,
 											{ctor: '[]'},
 											{
 												ctor: '::',
-												_0: _elm_lang$html$Html$text(details.channel),
+												_0: _elm_lang$html$Html$text('Channel'),
 												_1: {ctor: '[]'}
 											}),
-										_1: {ctor: '[]'}
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$th,
+												{ctor: '[]'},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text('URL'),
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}
 									}
-								}),
-							_1: {ctor: '[]'}
-						}
-					}
-				}
+								}
+							}
+						}),
+					_1: {ctor: '[]'}
+				}),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$tbody,
+					{ctor: '[]'},
+					{
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$tr,
+							{ctor: '[]'},
+							{
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$td,
+									{ctor: '[]'},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text(details.buildId),
+										_1: {ctor: '[]'}
+									}),
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$td,
+										{ctor: '[]'},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text(details.target),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$td,
+											{ctor: '[]'},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text(details.lang),
+												_1: {ctor: '[]'}
+											}),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$td,
+												{ctor: '[]'},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text(details.channel),
+													_1: {ctor: '[]'}
+												}),
+											_1: {
+												ctor: '::',
+												_0: A2(
+													_elm_lang$html$Html$td,
+													{ctor: '[]'},
+													{
+														ctor: '::',
+														_0: A2(
+															_elm_lang$html$Html$a,
+															{
+																ctor: '::',
+																_0: _elm_lang$html$Html_Attributes$href(details.url),
+																_1: {
+																	ctor: '::',
+																	_0: _elm_lang$html$Html_Attributes$title(details.url),
+																	_1: {ctor: '[]'}
+																}
+															},
+															{
+																ctor: '::',
+																_0: _elm_lang$html$Html$text('Link'),
+																_1: {ctor: '[]'}
+															}),
+														_1: {ctor: '[]'}
+													}),
+												_1: {ctor: '[]'}
+											}
+										}
+									}
+								}
+							}),
+						_1: {ctor: '[]'}
+					}),
+				_1: {ctor: '[]'}
 			}
 		});
 };
@@ -10682,29 +10718,48 @@ var _user$project$View$viewRelease = function (_p3) {
 	var _p5 = _p4.details;
 	return A2(
 		_elm_lang$html$Html$div,
-		{ctor: '[]'},
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('panel panel-default'),
+			_1: {ctor: '[]'}
+		},
 		{
 			ctor: '::',
 			_0: A2(
-				_elm_lang$html$Html$h2,
-				{ctor: '[]'},
+				_elm_lang$html$Html$div,
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(_p5.filename),
+					_0: _elm_lang$html$Html_Attributes$class('panel-heading'),
+					_1: {ctor: '[]'}
+				},
+				{
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$strong,
+						{ctor: '[]'},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text(_p5.filename),
+							_1: {ctor: '[]'}
+						}),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
 				ctor: '::',
-				_0: _user$project$View$viewReleaseDetails(_p5),
-				_1: {
-					ctor: '::',
-					_0: A2(
-						_elm_lang$html$Html$dl,
-						{ctor: '[]'},
-						{
+				_0: A2(
+					_elm_lang$html$Html$div,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class('panel-body'),
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: _user$project$View$viewReleaseDetails(_p5),
+						_1: {
 							ctor: '::',
 							_0: A2(
-								_elm_lang$html$Html$dt,
+								_elm_lang$html$Html$h4,
 								{ctor: '[]'},
 								{
 									ctor: '::',
@@ -10713,38 +10768,90 @@ var _user$project$View$viewRelease = function (_p3) {
 								}),
 							_1: {
 								ctor: '::',
-								_0: A2(
-									_elm_lang$html$Html$dd,
-									{ctor: '[]'},
-									{
-										ctor: '::',
-										_0: A2(_user$project$View$viewSystemAddons, _p4.builtins, _p4.updates),
-										_1: {ctor: '[]'}
-									}),
+								_0: A2(_user$project$View$viewSystemAddons, _p4.builtins, _p4.updates),
 								_1: {ctor: '[]'}
 							}
-						}),
-					_1: {ctor: '[]'}
-				}
+						}
+					}),
+				_1: {ctor: '[]'}
 			}
 		});
 };
 var _user$project$View$view = function (model) {
 	return A2(
 		_elm_lang$html$Html$div,
-		{ctor: '[]'},
 		{
 			ctor: '::',
-			_0: _user$project$View$viewFilters(model),
+			_0: _elm_lang$html$Html_Attributes$class('container'),
+			_1: {ctor: '[]'}
+		},
+		{
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$div,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$class('header'),
+					_1: {ctor: '[]'}
+				},
+				{
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$h1,
+						{ctor: '[]'},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text('System Addons'),
+							_1: {ctor: '[]'}
+						}),
+					_1: {ctor: '[]'}
+				}),
 			_1: {
 				ctor: '::',
 				_0: A2(
 					_elm_lang$html$Html$div,
-					{ctor: '[]'},
-					A2(
-						_elm_lang$core$List$map,
-						_user$project$View$viewRelease,
-						_user$project$Model$filterReleases(model))),
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class('row'),
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$div,
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html_Attributes$class('col-sm-9'),
+								_1: {ctor: '[]'}
+							},
+							{
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$div,
+									{ctor: '[]'},
+									A2(
+										_elm_lang$core$List$map,
+										_user$project$View$viewRelease,
+										_user$project$Model$filterReleases(model))),
+								_1: {ctor: '[]'}
+							}),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$div,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$class('col-sm-3'),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: _user$project$View$viewFilters(model),
+									_1: {ctor: '[]'}
+								}),
+							_1: {ctor: '[]'}
+						}
+					}),
 				_1: {ctor: '[]'}
 			}
 		});
