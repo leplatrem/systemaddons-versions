@@ -355,6 +355,7 @@ func fetchUpdates(release release, builtins []systemaddon) (results []systemaddo
 	if err = xml.Unmarshal(body, &updatesList); err != nil {
 		return nil, err
 	}
+	results = make([]systemaddon, 0)
 	for _, updated := range updatesList.Addons {
 		results = append(results, systemaddon{updated.ID, updated.Version})
 	}
