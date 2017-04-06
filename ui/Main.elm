@@ -1,7 +1,6 @@
 module Main exposing (..)
 
 import Dict
-import Set
 import Kinto
 import Json.Decode as Decode
 import Html
@@ -12,6 +11,10 @@ import Html.Events
 type Msg
     = ReleasesFetched (Result Kinto.Error (List Release))
     | ToggleChannelFilter Channel Bool
+
+
+type alias Channel =
+    String
 
 
 type alias SystemAddon =
@@ -29,17 +32,13 @@ type alias SystemAddonVersions =
 
 type alias ReleaseDetails =
     { buildId : String
-    , channel : String
+    , channel : Channel
     , filename : String
     , lang : String
     , target : String
     , url : String
     , version : String
     }
-
-
-type alias Channel =
-    String
 
 
 type alias Release =
@@ -64,11 +63,10 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { releases = []
-      , filters = { channels = Dict.fromList [] }
-      }
-    , getReleaseList
-    )
+    { releases = []
+    , filters = { channels = Dict.fromList [] }
+    }
+        ! [ getReleaseList ]
 
 
 decodeSystemAddon : Decode.Decoder SystemAddon
@@ -118,11 +116,6 @@ getReleaseList =
         |> Kinto.getList recordResource
         |> Kinto.sortBy [ "-release.version" ]
         |> Kinto.send ReleasesFetched
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
 
 
 viewReleaseDetails : ReleaseDetails -> Html.Html Msg
@@ -271,10 +264,7 @@ view model =
 
 extractChannels : List Release -> Dict.Dict Channel Bool
 extractChannels releaseList =
-    List.map (.details >> .channel) releaseList
-        |> Set.fromList
-        |> Set.toList
-        |> List.map (\c -> ( c, True ))
+    List.map (.details >> .channel >> (\c -> ( c, True ))) releaseList
         |> Dict.fromList
 
 
@@ -294,32 +284,30 @@ update message model =
         ReleasesFetched result ->
             case result of
                 Ok releases ->
-                    ( { model
+                    { model
                         | releases = releases
                         , filters = { channels = extractChannels releases }
-                      }
-                    , Cmd.none
-                    )
+                    }
+                        ! []
 
                 Err err ->
                     Debug.crash "Unhandled Kinto error"
 
         ToggleChannelFilter channel active ->
-            ( { model
+            { model
                 | filters =
                     { channels =
                         Dict.update channel (\_ -> Just active) model.filters.channels
                     }
-              }
-            , Cmd.none
-            )
+            }
+                ! []
 
 
 main : Program Never Model Msg
 main =
     Html.program
         { init = init
-        , subscriptions = subscriptions
+        , subscriptions = always Sub.none
         , view = view
         , update = update
         }
