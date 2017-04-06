@@ -10224,8 +10224,7 @@ var _user$project$Model$decodeRelease = A6(
 	A2(
 		_elm_lang$core$Json_Decode$field,
 		'updates',
-		_elm_lang$core$Json_Decode$maybe(
-			_elm_lang$core$Json_Decode$list(_user$project$Model$decodeSystemAddon))),
+		_elm_lang$core$Json_Decode$list(_user$project$Model$decodeSystemAddon)),
 	A2(_elm_lang$core$Json_Decode$field, 'release', _user$project$Model$decodeReleaseDetails),
 	A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'last_modified', _elm_lang$core$Json_Decode$int));
@@ -10434,10 +10433,6 @@ var _user$project$View$updateVersions = F2(
 					},
 					addons);
 			});
-		var uupdates = A2(
-			_elm_lang$core$Maybe$withDefault,
-			{ctor: '[]'},
-			updates);
 		return A3(
 			_elm_lang$core$List$foldr,
 			F2(
@@ -10456,7 +10451,7 @@ var _user$project$View$updateVersions = F2(
 						});
 				}),
 			builtins,
-			uupdates);
+			updates);
 	});
 var _user$project$View$builtinVersions = function (builtins) {
 	return A2(
