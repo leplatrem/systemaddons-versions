@@ -14,7 +14,7 @@ import Model
         , ReleaseDetails
         , Msg(..)
         , ToggleFilterMsg(..)
-        , filterReleases
+        , applyFilters
         )
 
 
@@ -173,7 +173,7 @@ view model =
             [ h1 [] [ Html.text "System Addons" ] ]
         , div [ class "row" ]
             [ div [ class "col-sm-9" ]
-                [ div [] <| List.map viewRelease <| filterReleases model ]
+                [ div [] <| List.map viewRelease <| applyFilters model ]
             , div [ class "col-sm-3" ]
                 [ viewFilters model ]
             ]

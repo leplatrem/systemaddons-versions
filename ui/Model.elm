@@ -8,7 +8,7 @@ module Model
         , FilterSet
         , Msg(..)
         , ToggleFilterMsg(..)
-        , filterReleases
+        , applyFilters
         , init
         , update
         )
@@ -159,14 +159,14 @@ getReleaseList =
         |> Kinto.send ReleasesFetched
 
 
-extractFilterSet : (Release -> String) -> List Release -> Dict.Dict String Bool
+extractFilterSet : (Release -> String) -> List Release -> FilterSet
 extractFilterSet accessor releases =
     List.map (accessor >> (\c -> ( c, True ))) releases
         |> Dict.fromList
 
 
-extractVersions : List Release -> Dict.Dict String Bool
-extractVersions releases =
+extractVersionFilterSet : List Release -> FilterSet
+extractVersionFilterSet releases =
     -- TODO: sort desc
     let
         extractVersion ( version, x ) =
@@ -183,8 +183,8 @@ extractVersions releases =
             |> Dict.fromList
 
 
-processFilter : FilterSet -> (Release -> String) -> List Release -> List Release
-processFilter filterSet accessor releases =
+applyFilter : FilterSet -> (Release -> String) -> List Release -> List Release
+applyFilter filterSet accessor releases =
     List.filter
         (\release ->
             Dict.get (accessor release) filterSet
@@ -193,8 +193,8 @@ processFilter filterSet accessor releases =
         releases
 
 
-processFilterVersions : FilterSet -> List Release -> List Release
-processFilterVersions filterSet releases =
+applyVersionFilter : FilterSet -> List Release -> List Release
+applyVersionFilter filterSet releases =
     List.filter
         (\{ details } ->
             List.any
@@ -204,13 +204,13 @@ processFilterVersions filterSet releases =
         releases
 
 
-filterReleases : Model -> List Release
-filterReleases { filters, releases } =
+applyFilters : Model -> List Release
+applyFilters { filters, releases } =
     releases
-        |> processFilter filters.channels (.details >> .channel)
-        |> processFilter filters.langs (.details >> .lang)
-        |> processFilter filters.targets (.details >> .target)
-        |> processFilterVersions filters.versions
+        |> applyFilter filters.channels (.details >> .channel)
+        |> applyFilter filters.langs (.details >> .lang)
+        |> applyFilter filters.targets (.details >> .target)
+        |> applyVersionFilter filters.versions
 
 
 toggleFilter : FilterSet -> String -> Bool -> FilterSet
@@ -246,7 +246,7 @@ update message ({ filters } as model) =
                             { channels = extractFilterSet (.details >> .channel) releases
                             , langs = extractFilterSet (.details >> .lang) releases
                             , targets = extractFilterSet (.details >> .target) releases
-                            , versions = extractVersions releases
+                            , versions = extractVersionFilterSet releases
                             }
                     }
                         ! []
