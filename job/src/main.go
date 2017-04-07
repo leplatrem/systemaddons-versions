@@ -13,6 +13,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+const USER_AGENT string = "systemaddons-versions"
+
 var DELIVERY_URL string
 var AUS_URL string
 var KINTO_URL string
@@ -134,7 +136,8 @@ func main() {
 
 	minVersion, err := LastPublish(KINTO_URL)
 	if err != nil {
-		panic(err)
+		log.Fatal("Could not fetch info about last published release")
+		minVersion = ""
 	}
 	releases, errc := WalkReleases(done, DELIVERY_URL, minVersion)
 
@@ -145,9 +148,9 @@ func main() {
 	wg.Add(nbWorkers)
 	for i := 0; i < nbWorkers; i++ {
 		go func() {
-			dlerrc := inspectVersions(done, releases, results)
-			if err := <-dlerrc; err != nil {
-				panic(err)
+			ierrc := inspectVersions(done, releases, results)
+			for ierr := range ierrc {
+				log.Fatal(ierr)
 			}
 			wg.Done()
 		}()
@@ -160,11 +163,12 @@ func main() {
 	for r := range results {
 		err := Publish(KINTO_URL, KINTO_AUTH, r)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 	}
-	if err := <-errc; err != nil {
-		panic(err)
+	for err = range errc {
+		log.Fatal(err)
 	}
+
 	log.Info("Done.")
 }

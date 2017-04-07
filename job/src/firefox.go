@@ -99,7 +99,7 @@ func fetchUpdates(url string, release release, builtins []systemaddon) (results 
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/xml")
-	req.Header.Set("User-Agent", "systemaddons-versions")
+	req.Header.Set("User-Agent", USER_AGENT)
 
 	res, getErr := client.Do(req)
 	if getErr != nil {
