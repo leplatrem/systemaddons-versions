@@ -71,6 +71,7 @@ viewReleaseDetails details =
                 [ th [] [ text "Build ID" ]
                 , th [] [ text "Target" ]
                 , th [] [ text "Lang" ]
+                , th [] [ text "Version" ]
                 , th [] [ text "Channel" ]
                 , th [] [ text "URL" ]
                 ]
@@ -80,6 +81,7 @@ viewReleaseDetails details =
                 [ td [] [ text details.buildId ]
                 , td [] [ text details.target ]
                 , td [] [ text details.lang ]
+                , td [] [ text details.version ]
                 , td [] [ text details.channel ]
                 , td [] [ a [ href details.url, title details.url ] [ text details.filename ] ]
                 ]
@@ -115,7 +117,8 @@ viewSystemAddons builtins updates =
 viewRelease : Release -> Html Msg
 viewRelease { details, builtins, updates } =
     div [ class "panel panel-default" ]
-        [ div [ class "panel-heading" ] [ strong [] [ text details.filename ] ]
+        [ div [ class "panel-heading" ]
+            [ strong [] [ text <| "Firefox " ++ details.version ] ]
         , div [ class "panel-body" ]
             [ viewReleaseDetails details
             , h4 [] [ text "System Addons" ]
