@@ -7,37 +7,15 @@ import Html.Events exposing (..)
 import Model
     exposing
         ( Model
+        , FilterSet
         , Release
         , SystemAddon
         , SystemAddonVersions
         , ReleaseDetails
         , Msg(..)
-        , filterReleases
+        , ToggleFilterMsg(..)
+        , applyFilters
         )
-
-
-viewReleaseDetails : ReleaseDetails -> Html Msg
-viewReleaseDetails details =
-    table [ class "table table-condensed" ]
-        [ thead []
-            [ tr []
-                [ th [] [ text "Build ID" ]
-                , th [] [ text "Target" ]
-                , th [] [ text "Lang" ]
-                , th [] [ text "Channel" ]
-                , th [] [ text "URL" ]
-                ]
-            ]
-        , tbody []
-            [ tr []
-                [ td [] [ text details.buildId ]
-                , td [] [ text details.target ]
-                , td [] [ text details.lang ]
-                , td [] [ text details.channel ]
-                , td [] [ a [ href details.url, title details.url ] [ text "Link" ] ]
-                ]
-            ]
-        ]
 
 
 joinBuiltinsUpdates : List SystemAddon -> List SystemAddon -> List SystemAddonVersions
@@ -85,6 +63,32 @@ updateVersions updates builtins =
             updates
 
 
+viewReleaseDetails : ReleaseDetails -> Html Msg
+viewReleaseDetails details =
+    table [ class "table table-condensed" ]
+        [ thead []
+            [ tr []
+                [ th [] [ text "Build ID" ]
+                , th [] [ text "Target" ]
+                , th [] [ text "Lang" ]
+                , th [] [ text "Version" ]
+                , th [] [ text "Channel" ]
+                , th [] [ text "URL" ]
+                ]
+            ]
+        , tbody []
+            [ tr []
+                [ td [] [ text details.buildId ]
+                , td [] [ text details.target ]
+                , td [] [ text details.lang ]
+                , td [] [ text details.version ]
+                , td [] [ text details.channel ]
+                , td [] [ a [ href details.url, title details.url ] [ text details.filename ] ]
+                ]
+            ]
+        ]
+
+
 viewSystemAddonVersionsRow : SystemAddonVersions -> Html Msg
 viewSystemAddonVersionsRow addon =
     tr []
@@ -113,7 +117,8 @@ viewSystemAddons builtins updates =
 viewRelease : Release -> Html Msg
 viewRelease { details, builtins, updates } =
     div [ class "panel panel-default" ]
-        [ div [ class "panel-heading" ] [ strong [] [ text details.filename ] ]
+        [ div [ class "panel-heading" ]
+            [ strong [] [ text <| "Firefox " ++ details.version ] ]
         , div [ class "panel-body" ]
             [ viewReleaseDetails details
             , h4 [] [ text "System Addons" ]
@@ -122,29 +127,63 @@ viewRelease { details, builtins, updates } =
         ]
 
 
-viewFilters : Model -> Html Msg
-viewFilters model =
-    let
-        channelFilter ( channel, active ) =
-            li [ class "list-group-item" ]
-                [ label []
-                    [ input
-                        [ type_ "checkbox"
-                        , value channel
-                        , onCheck <| ToggleChannelFilter channel
-                        , checked active
-                        ]
-                        []
-                    , text <| " " ++ channel
-                    ]
+filterCheckbox : (String -> Bool -> Msg) -> ( String, Bool ) -> Html Msg
+filterCheckbox handler ( name, active ) =
+    li [ class "list-group-item" ]
+        [ div [ class "checkbox", style [ ( "margin", "0" ) ] ]
+            [ label []
+                [ input
+                    [ type_ "checkbox", onCheck <| handler name, checked active ]
+                    []
+                , text <| " " ++ name
                 ]
+            ]
+        ]
 
-        channels =
-            model.filters.channels |> Dict.toList |> List.map channelFilter
+
+filterSetForm : List ( String, Bool ) -> String -> (String -> Bool -> Msg) -> Html Msg
+filterSetForm filterSet label handler =
+    let
+        filters =
+            filterSet |> List.map (filterCheckbox handler)
     in
         div [ class "panel panel-default" ]
-            [ div [ class "panel-heading" ] [ strong [] [ text "Filter channels" ] ]
-            , ul [ class "list-group" ] <| channels
+            [ div [ class "panel-heading" ] [ strong [] [ text label ] ]
+            , ul [ class "list-group" ] <| filters
+            ]
+
+
+viewFilters : Model -> Html Msg
+viewFilters { filters } =
+    let
+        channels =
+            Dict.toList filters.channels
+
+        versions =
+            Dict.toList filters.versions |> List.reverse
+
+        targets =
+            Dict.toList filters.targets
+
+        addons =
+            Dict.toList filters.addons
+
+        eventHandler msg =
+            (\name active -> ToggleFilter <| msg name active)
+    in
+        div
+            [ style
+                [ ( "position", "fixed" )
+                , ( "max-height", "calc(100vh - 75px)" )
+                , ( "position", "fixed" )
+                , ( "overflow-y", "auto" )
+                , ( "padding-right", ".1em" )
+                ]
+            ]
+            [ filterSetForm channels "Channels" <| eventHandler ToggleChannel
+            , filterSetForm versions "Versions" <| eventHandler ToggleVersion
+            , filterSetForm targets "Targets" <| eventHandler ToggleTarget
+            , filterSetForm addons "Addons" <| eventHandler ToggleAddon
             ]
 
 
@@ -152,12 +191,11 @@ view : Model -> Html Msg
 view model =
     div [ class "container" ]
         [ div [ class "header" ]
-            [ h1 [] [ Html.text "System Addons" ]
-            ]
+            [ h1 [] [ Html.text "System Addons" ] ]
         , div [ class "row" ]
             [ div [ class "col-sm-9" ]
-                [ div [] <| List.map viewRelease <| filterReleases model
-                ]
-            , div [ class "col-sm-3" ] [ viewFilters model ]
+                [ div [] <| List.map viewRelease <| applyFilters model ]
+            , div [ class "col-sm-3" ]
+                [ viewFilters model ]
             ]
         ]

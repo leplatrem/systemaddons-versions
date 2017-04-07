@@ -5,8 +5,10 @@ module Model
         , SystemAddon
         , SystemAddonVersions
         , ReleaseDetails
+        , FilterSet
         , Msg(..)
-        , filterReleases
+        , ToggleFilterMsg(..)
+        , applyFilters
         , init
         , update
         )
@@ -16,13 +18,32 @@ import Kinto
 import Json.Decode as Decode
 
 
-type Msg
-    = ReleasesFetched (Result Kinto.Error (List Release))
-    | ToggleChannelFilter Channel Bool
-
-
 type alias Channel =
     String
+
+
+type alias Target =
+    String
+
+
+type alias Version =
+    String
+
+
+type alias Addon =
+    String
+
+
+type ToggleFilterMsg
+    = ToggleChannel Channel Bool
+    | ToggleTarget Target Bool
+    | ToggleVersion Version Bool
+    | ToggleAddon Addon Bool
+
+
+type Msg
+    = ReleasesFetched (Result Kinto.Error (List Release))
+    | ToggleFilter ToggleFilterMsg
 
 
 type alias SystemAddon =
@@ -58,8 +79,15 @@ type alias Release =
     }
 
 
+type alias FilterSet =
+    Dict.Dict String Bool
+
+
 type alias Filters =
-    { channels : Dict.Dict Channel Bool
+    { channels : FilterSet
+    , targets : FilterSet
+    , versions : FilterSet
+    , addons : FilterSet
     }
 
 
@@ -72,7 +100,12 @@ type alias Model =
 init : ( Model, Cmd Msg )
 init =
     { releases = []
-    , filters = { channels = Dict.fromList [] }
+    , filters =
+        { channels = Dict.fromList []
+        , targets = Dict.fromList []
+        , versions = Dict.fromList []
+        , addons = Dict.fromList []
+        }
     }
         ! [ getReleaseList ]
 
@@ -126,42 +159,128 @@ getReleaseList =
         |> Kinto.send ReleasesFetched
 
 
-extractChannels : List Release -> Dict.Dict Channel Bool
-extractChannels releaseList =
-    List.map (.details >> .channel >> (\c -> ( c, True ))) releaseList
+extractFilterSet : (Release -> String) -> List Release -> FilterSet
+extractFilterSet accessor releases =
+    List.map (accessor >> (\c -> ( c, True ))) releases
         |> Dict.fromList
 
 
-filterReleases : Model -> List Release
-filterReleases { filters, releases } =
+extractVersionFilterSet : List Release -> FilterSet
+extractVersionFilterSet releases =
+    -- TODO: sort desc
+    let
+        extractVersion ( version, active ) =
+            case (String.split "." version) of
+                major :: _ ->
+                    ( major, active )
+
+                _ ->
+                    ( version, active )
+    in
+        extractFilterSet (.details >> .version) releases
+            |> Dict.toList
+            |> List.map extractVersion
+            |> Dict.fromList
+
+
+extractAddonsFilterSet : List Release -> FilterSet
+extractAddonsFilterSet releases =
+    List.map .builtins releases
+        |> List.concat
+        |> List.map (\addon -> ( addon.id, True ))
+        |> Dict.fromList
+
+
+extractFilters : List Release -> Filters
+extractFilters releases =
+    { channels = extractFilterSet (.details >> .channel) releases
+    , targets = extractFilterSet (.details >> .target) releases
+    , versions = extractVersionFilterSet releases
+    , addons = extractAddonsFilterSet releases
+    }
+
+
+getActiveFilters : FilterSet -> List String
+getActiveFilters filterSet =
+    Dict.filter (\k v -> v) filterSet |> Dict.keys
+
+
+applyFilter : FilterSet -> (Release -> String) -> List Release -> List Release
+applyFilter filterSet accessor releases =
     List.filter
-        (\{ details } ->
-            Dict.get details.channel filters.channels
+        (\release ->
+            Dict.get (accessor release) filterSet
                 |> Maybe.withDefault True
         )
         releases
 
 
+applyVersionFilter : FilterSet -> List Release -> List Release
+applyVersionFilter filterSet releases =
+    List.filter
+        (\{ details } ->
+            List.any
+                (\major -> String.startsWith major details.version)
+                (getActiveFilters filterSet)
+        )
+        releases
+
+
+applyAddonFilter : FilterSet -> List Release -> List Release
+applyAddonFilter filterSet releases =
+    List.filter
+        (\{ builtins } ->
+            List.any
+                (\addon -> List.member addon (List.map .id builtins))
+                (getActiveFilters filterSet)
+        )
+        releases
+
+
+applyFilters : Model -> List Release
+applyFilters { filters, releases } =
+    releases
+        |> applyFilter filters.channels (.details >> .channel)
+        |> applyFilter filters.targets (.details >> .target)
+        |> applyVersionFilter filters.versions
+        |> applyAddonFilter filters.addons
+
+
+toggleFilter : FilterSet -> String -> Bool -> FilterSet
+toggleFilter filterSet name active =
+    Dict.update name (\_ -> Just active) filterSet
+
+
+toggleFilters : ToggleFilterMsg -> Filters -> Filters
+toggleFilters toggleMsg filters =
+    case toggleMsg of
+        ToggleChannel channel active ->
+            { filters | channels = toggleFilter filters.channels channel active }
+
+        ToggleTarget target active ->
+            { filters | targets = toggleFilter filters.targets target active }
+
+        ToggleVersion version active ->
+            { filters | versions = toggleFilter filters.versions version active }
+
+        ToggleAddon addon active ->
+            { filters | addons = toggleFilter filters.addons addon active }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
-update message model =
-    case message of
+update msg ({ filters } as model) =
+    case msg of
         ReleasesFetched result ->
             case result of
                 Ok releases ->
                     { model
                         | releases = releases
-                        , filters = { channels = extractChannels releases }
+                        , filters = extractFilters releases
                     }
                         ! []
 
                 Err err ->
                     Debug.crash "Unhandled Kinto error"
 
-        ToggleChannelFilter channel active ->
-            { model
-                | filters =
-                    { channels =
-                        Dict.update channel (\_ -> Just active) model.filters.channels
-                    }
-            }
-                ! []
+        ToggleFilter msg ->
+            { model | filters = toggleFilters msg filters } ! []
