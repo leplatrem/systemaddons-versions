@@ -13,6 +13,7 @@ import Model
         , SystemAddonVersions
         , ReleaseDetails
         , Msg(..)
+        , ToggleFilterMsg(..)
         , filterReleases
         )
 
@@ -80,7 +81,7 @@ viewReleaseDetails details =
                 , td [] [ text details.target ]
                 , td [] [ text details.lang ]
                 , td [] [ text details.channel ]
-                , td [] [ a [ href details.url, title details.url ] [ text "Link" ] ]
+                , td [] [ a [ href details.url, title details.url ] [ text details.filename ] ]
                 ]
             ]
         ]
@@ -129,11 +130,7 @@ filterCheckbox handler ( name, active ) =
         [ div [ class "checkbox" ]
             [ label []
                 [ input
-                    [ type_ "checkbox"
-                    , value name
-                    , onCheck <| handler name
-                    , checked active
-                    ]
+                    [ type_ "checkbox", onCheck <| handler name, checked active ]
                     []
                 , text <| " " ++ name
                 ]
@@ -157,12 +154,16 @@ filterSetForm filterSet label handler =
 
 viewFilters : Model -> Html Msg
 viewFilters { filters } =
-    div []
-        [ filterSetForm filters.versions "Versions" ToggleVersionFilter
-        , filterSetForm filters.targets "Targets" ToggleTargetFilter
-        , filterSetForm filters.channels "Channels" ToggleChannelFilter
-        , filterSetForm filters.langs "Langs" ToggleLangFilter
-        ]
+    let
+        eventHandler msg =
+            (\name active -> ToggleFilter <| msg name active)
+    in
+        div []
+            [ filterSetForm filters.versions "Versions" <| eventHandler ToggleVersion
+            , filterSetForm filters.targets "Targets" <| eventHandler ToggleTarget
+            , filterSetForm filters.channels "Channels" <| eventHandler ToggleChannel
+            , filterSetForm filters.langs "Langs" <| eventHandler ToggleLang
+            ]
 
 
 view : Model -> Html Msg

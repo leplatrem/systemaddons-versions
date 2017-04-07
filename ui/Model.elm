@@ -7,6 +7,7 @@ module Model
         , ReleaseDetails
         , FilterSet
         , Msg(..)
+        , ToggleFilterMsg(..)
         , filterReleases
         , init
         , update
@@ -33,12 +34,16 @@ type alias Version =
     String
 
 
+type ToggleFilterMsg
+    = ToggleChannel Channel Bool
+    | ToggleLang Lang Bool
+    | ToggleTarget Target Bool
+    | ToggleVersion Version Bool
+
+
 type Msg
     = ReleasesFetched (Result Kinto.Error (List Release))
-    | ToggleChannelFilter Channel Bool
-    | ToggleLangFilter Lang Bool
-    | ToggleTargetFilter Target Bool
-    | ToggleVersionFilter Version Bool
+    | ToggleFilter ToggleFilterMsg
 
 
 type alias SystemAddon =
@@ -208,6 +213,27 @@ filterReleases { filters, releases } =
         |> processFilterVersions filters.versions
 
 
+toggleFilter : FilterSet -> String -> Bool -> FilterSet
+toggleFilter filterSet name active =
+    Dict.update name (\_ -> Just active) filterSet
+
+
+updateFilters : ToggleFilterMsg -> Filters -> Filters
+updateFilters toggleMsg filters =
+    case toggleMsg of
+        ToggleChannel channel active ->
+            { filters | channels = toggleFilter filters.channels channel active }
+
+        ToggleLang lang active ->
+            { filters | langs = toggleFilter filters.langs lang active }
+
+        ToggleTarget target active ->
+            { filters | targets = toggleFilter filters.targets target active }
+
+        ToggleVersion version active ->
+            { filters | versions = toggleFilter filters.versions version active }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message ({ filters } as model) =
     case message of
@@ -228,39 +254,5 @@ update message ({ filters } as model) =
                 Err err ->
                     Debug.crash "Unhandled Kinto error"
 
-        ToggleChannelFilter channel active ->
-            let
-                channels =
-                    Dict.update channel (\_ -> Just active) model.filters.channels
-
-                newFilters =
-                    { filters | channels = channels }
-            in
-                { model | filters = newFilters } ! []
-
-        ToggleLangFilter lang active ->
-            let
-                newFilters =
-                    { filters
-                        | langs = Dict.update lang (\_ -> Just active) filters.langs
-                    }
-            in
-                { model | filters = newFilters } ! []
-
-        ToggleTargetFilter target active ->
-            let
-                newFilters =
-                    { filters
-                        | targets = Dict.update target (\_ -> Just active) filters.targets
-                    }
-            in
-                { model | filters = newFilters } ! []
-
-        ToggleVersionFilter version active ->
-            let
-                newFilters =
-                    { filters
-                        | versions = Dict.update version (\_ -> Just active) filters.versions
-                    }
-            in
-                { model | filters = newFilters } ! []
+        ToggleFilter msg ->
+            { model | filters = updateFilters msg filters } ! []
