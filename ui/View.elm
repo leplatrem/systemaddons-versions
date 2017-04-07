@@ -130,7 +130,7 @@ viewRelease { details, builtins, updates } =
 filterCheckbox : (String -> Bool -> Msg) -> ( String, Bool ) -> Html Msg
 filterCheckbox handler ( name, active ) =
     li [ class "list-group-item" ]
-        [ div [ class "checkbox" ]
+        [ div [ class "checkbox", style [ ( "margin", "0" ) ] ]
             [ label []
                 [ input
                     [ type_ "checkbox", onCheck <| handler name, checked active ]
@@ -171,7 +171,15 @@ viewFilters { filters } =
         eventHandler msg =
             (\name active -> ToggleFilter <| msg name active)
     in
-        div []
+        div
+            [ style
+                [ ( "position", "fixed" )
+                , ( "max-height", "calc(100vh - 75px)" )
+                , ( "position", "fixed" )
+                , ( "overflow-y", "auto" )
+                , ( "padding-right", ".1em" )
+                ]
+            ]
             [ filterSetForm channels "Channels" <| eventHandler ToggleChannel
             , filterSetForm versions "Versions" <| eventHandler ToggleVersion
             , filterSetForm targets "Targets" <| eventHandler ToggleTarget
