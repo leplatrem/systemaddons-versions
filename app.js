@@ -10103,16 +10103,56 @@ var _elm_lang$html$Html_Events$Options = F2(
 		return {stopPropagation: a, preventDefault: b};
 	});
 
-var _user$project$Model$processFilterVersions = F2(
+var _user$project$Model$toggleFilter = F3(
+	function (filterSet, name, active) {
+		return A3(
+			_elm_lang$core$Dict$update,
+			name,
+			function (_p0) {
+				return _elm_lang$core$Maybe$Just(active);
+			},
+			filterSet);
+	});
+var _user$project$Model$updateFilters = F2(
+	function (toggleMsg, filters) {
+		var _p1 = toggleMsg;
+		switch (_p1.ctor) {
+			case 'ToggleChannel':
+				return _elm_lang$core$Native_Utils.update(
+					filters,
+					{
+						channels: A3(_user$project$Model$toggleFilter, filters.channels, _p1._0, _p1._1)
+					});
+			case 'ToggleLang':
+				return _elm_lang$core$Native_Utils.update(
+					filters,
+					{
+						langs: A3(_user$project$Model$toggleFilter, filters.langs, _p1._0, _p1._1)
+					});
+			case 'ToggleTarget':
+				return _elm_lang$core$Native_Utils.update(
+					filters,
+					{
+						targets: A3(_user$project$Model$toggleFilter, filters.targets, _p1._0, _p1._1)
+					});
+			default:
+				return _elm_lang$core$Native_Utils.update(
+					filters,
+					{
+						versions: A3(_user$project$Model$toggleFilter, filters.versions, _p1._0, _p1._1)
+					});
+		}
+	});
+var _user$project$Model$applyVersionFilter = F2(
 	function (filterSet, releases) {
 		return A2(
 			_elm_lang$core$List$filter,
-			function (_p0) {
-				var _p1 = _p0;
+			function (_p2) {
+				var _p3 = _p2;
 				return A2(
 					_elm_lang$core$List$any,
-					function (f) {
-						return A2(_elm_lang$core$String$startsWith, f, _p1.details.filename);
+					function (major) {
+						return A2(_elm_lang$core$String$startsWith, major, _p3.details.version);
 					},
 					_elm_lang$core$Dict$keys(
 						A2(
@@ -10125,7 +10165,7 @@ var _user$project$Model$processFilterVersions = F2(
 			},
 			releases);
 	});
-var _user$project$Model$processFilter = F3(
+var _user$project$Model$applyFilter = F3(
 	function (filterSet, accessor, releases) {
 		return A2(
 			_elm_lang$core$List$filter,
@@ -10140,69 +10180,70 @@ var _user$project$Model$processFilter = F3(
 			},
 			releases);
 	});
-var _user$project$Model$filterReleases = function (_p2) {
-	var _p3 = _p2;
-	var _p7 = _p3.filters;
+var _user$project$Model$applyFilters = function (_p4) {
+	var _p5 = _p4;
+	var _p9 = _p5.filters;
 	return A2(
-		_user$project$Model$processFilterVersions,
-		_p7.versions,
+		_user$project$Model$applyVersionFilter,
+		_p9.versions,
 		A3(
-			_user$project$Model$processFilter,
-			_p7.targets,
-			function (_p4) {
+			_user$project$Model$applyFilter,
+			_p9.targets,
+			function (_p6) {
 				return function (_) {
 					return _.target;
 				}(
 					function (_) {
 						return _.details;
-					}(_p4));
+					}(_p6));
 			},
 			A3(
-				_user$project$Model$processFilter,
-				_p7.langs,
-				function (_p5) {
+				_user$project$Model$applyFilter,
+				_p9.langs,
+				function (_p7) {
 					return function (_) {
 						return _.lang;
 					}(
 						function (_) {
 							return _.details;
-						}(_p5));
+						}(_p7));
 				},
 				A3(
-					_user$project$Model$processFilter,
-					_p7.channels,
-					function (_p6) {
+					_user$project$Model$applyFilter,
+					_p9.channels,
+					function (_p8) {
 						return function (_) {
 							return _.channel;
 						}(
 							function (_) {
 								return _.details;
-							}(_p6));
+							}(_p8));
 					},
-					_p3.releases))));
+					_p5.releases))));
 };
 var _user$project$Model$extractFilterSet = F2(
 	function (accessor, releases) {
 		return _elm_lang$core$Dict$fromList(
 			A2(
 				_elm_lang$core$List$map,
-				function (_p8) {
+				function (_p10) {
 					return function (c) {
 						return {ctor: '_Tuple2', _0: c, _1: true};
 					}(
-						accessor(_p8));
+						accessor(_p10));
 				},
 				releases));
 	});
-var _user$project$Model$extractVersions = function (releases) {
-	var extractVersion = function (_p9) {
-		var _p10 = _p9;
-		var _p12 = _p10._1;
-		var _p11 = A2(_elm_lang$core$String$split, '.', _p10._0);
-		if (_p11.ctor === '::') {
-			return {ctor: '_Tuple2', _0: _p11._0, _1: _p12};
+var _user$project$Model$extractVersionFilterSet = function (releases) {
+	var extractVersion = function (_p11) {
+		var _p12 = _p11;
+		var _p15 = _p12._0;
+		var _p14 = _p12._1;
+		var _p13 = A2(_elm_lang$core$String$split, '.', _p15);
+		if (_p13.ctor === '::') {
+			return {ctor: '_Tuple2', _0: _p13._0, _1: _p14};
 		} else {
-			return {ctor: '_Tuple2', _0: 'None', _1: _p12};
+			return {ctor: '_Tuple2', _0: _p15, _1: _p14};
 		}
 	};
 	return _elm_lang$core$Dict$fromList(
@@ -10212,151 +10253,87 @@ var _user$project$Model$extractVersions = function (releases) {
 			_elm_lang$core$Dict$toList(
 				A2(
 					_user$project$Model$extractFilterSet,
-					function (_p13) {
+					function (_p16) {
 						return function (_) {
-							return _.filename;
+							return _.version;
 						}(
 							function (_) {
 								return _.details;
-							}(_p13));
+							}(_p16));
 					},
 					releases))));
 };
 var _user$project$Model$update = F2(
-	function (message, _p14) {
-		var _p15 = _p14;
-		var _p28 = _p15;
-		var _p27 = _p15.filters;
-		var _p16 = message;
-		switch (_p16.ctor) {
-			case 'ReleasesFetched':
-				var _p17 = _p16._0;
-				if (_p17.ctor === 'Ok') {
-					var _p21 = _p17._0;
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						_elm_lang$core$Native_Utils.update(
-							_p28,
-							{
-								releases: _p21,
-								filters: {
-									channels: A2(
-										_user$project$Model$extractFilterSet,
-										function (_p18) {
-											return function (_) {
-												return _.channel;
-											}(
-												function (_) {
-													return _.details;
-												}(_p18));
-										},
-										_p21),
-									langs: A2(
-										_user$project$Model$extractFilterSet,
-										function (_p19) {
-											return function (_) {
-												return _.lang;
-											}(
-												function (_) {
-													return _.details;
-												}(_p19));
-										},
-										_p21),
-									targets: A2(
-										_user$project$Model$extractFilterSet,
-										function (_p20) {
-											return function (_) {
-												return _.target;
-											}(
-												function (_) {
-													return _.details;
-												}(_p20));
-										},
-										_p21),
-									versions: _user$project$Model$extractVersions(_p21)
-								}
-							}),
-						{ctor: '[]'});
-				} else {
-					return _elm_lang$core$Native_Utils.crashCase(
-						'Model',
+	function (message, _p17) {
+		var _p18 = _p17;
+		var _p26 = _p18;
+		var _p19 = message;
+		if (_p19.ctor === 'ReleasesFetched') {
+			var _p20 = _p19._0;
+			if (_p20.ctor === 'Ok') {
+				var _p24 = _p20._0;
+				return A2(
+					_elm_lang$core$Platform_Cmd_ops['!'],
+					_elm_lang$core$Native_Utils.update(
+						_p26,
 						{
-							start: {line: 215, column: 13},
-							end: {line: 229, column: 56}
-						},
-						_p17)('Unhandled Kinto error');
-				}
-			case 'ToggleChannelFilter':
-				var channels = A3(
-					_elm_lang$core$Dict$update,
-					_p16._0,
-					function (_p23) {
-						return _elm_lang$core$Maybe$Just(_p16._1);
+							releases: _p24,
+							filters: {
+								channels: A2(
+									_user$project$Model$extractFilterSet,
+									function (_p21) {
+										return function (_) {
+											return _.channel;
+										}(
+											function (_) {
+												return _.details;
+											}(_p21));
+									},
+									_p24),
+								langs: A2(
+									_user$project$Model$extractFilterSet,
+									function (_p22) {
+										return function (_) {
+											return _.lang;
+										}(
+											function (_) {
+												return _.details;
+											}(_p22));
+									},
+									_p24),
+								targets: A2(
+									_user$project$Model$extractFilterSet,
+									function (_p23) {
+										return function (_) {
+											return _.target;
+										}(
+											function (_) {
+												return _.details;
+											}(_p23));
+									},
+									_p24),
+								versions: _user$project$Model$extractVersionFilterSet(_p24)
+							}
+						}),
+					{ctor: '[]'});
+			} else {
+				return _elm_lang$core$Native_Utils.crashCase(
+					'Model',
+					{
+						start: {line: 241, column: 13},
+						end: {line: 255, column: 56}
 					},
-					_p28.filters.channels);
-				var newFilters = _elm_lang$core$Native_Utils.update(
-					_p27,
-					{channels: channels});
-				return A2(
-					_elm_lang$core$Platform_Cmd_ops['!'],
-					_elm_lang$core$Native_Utils.update(
-						_p28,
-						{filters: newFilters}),
-					{ctor: '[]'});
-			case 'ToggleLangFilter':
-				var newFilters = _elm_lang$core$Native_Utils.update(
-					_p27,
+					_p20)('Unhandled Kinto error');
+			}
+		} else {
+			return A2(
+				_elm_lang$core$Platform_Cmd_ops['!'],
+				_elm_lang$core$Native_Utils.update(
+					_p26,
 					{
-						langs: A3(
-							_elm_lang$core$Dict$update,
-							_p16._0,
-							function (_p24) {
-								return _elm_lang$core$Maybe$Just(_p16._1);
-							},
-							_p27.langs)
-					});
-				return A2(
-					_elm_lang$core$Platform_Cmd_ops['!'],
-					_elm_lang$core$Native_Utils.update(
-						_p28,
-						{filters: newFilters}),
-					{ctor: '[]'});
-			case 'ToggleTargetFilter':
-				var newFilters = _elm_lang$core$Native_Utils.update(
-					_p27,
-					{
-						targets: A3(
-							_elm_lang$core$Dict$update,
-							_p16._0,
-							function (_p25) {
-								return _elm_lang$core$Maybe$Just(_p16._1);
-							},
-							_p27.targets)
-					});
-				return A2(
-					_elm_lang$core$Platform_Cmd_ops['!'],
-					_elm_lang$core$Native_Utils.update(
-						_p28,
-						{filters: newFilters}),
-					{ctor: '[]'});
-			default:
-				var newFilters = _elm_lang$core$Native_Utils.update(
-					_p27,
-					{
-						versions: A3(
-							_elm_lang$core$Dict$update,
-							_p16._0,
-							function (_p26) {
-								return _elm_lang$core$Maybe$Just(_p16._1);
-							},
-							_p27.versions)
-					});
-				return A2(
-					_elm_lang$core$Platform_Cmd_ops['!'],
-					_elm_lang$core$Native_Utils.update(
-						_p28,
-						{filters: newFilters}),
-					{ctor: '[]'});
+						filters: A2(_user$project$Model$updateFilters, _p19._0, _p18.filters)
+					}),
+				{ctor: '[]'});
 		}
 	});
 var _user$project$Model$client = A2(
@@ -10417,22 +10394,25 @@ var _user$project$Model$Model = F2(
 	function (a, b) {
 		return {releases: a, filters: b};
 	});
-var _user$project$Model$ToggleVersionFilter = F2(
+var _user$project$Model$ToggleVersion = F2(
 	function (a, b) {
-		return {ctor: 'ToggleVersionFilter', _0: a, _1: b};
+		return {ctor: 'ToggleVersion', _0: a, _1: b};
 	});
-var _user$project$Model$ToggleTargetFilter = F2(
+var _user$project$Model$ToggleTarget = F2(
 	function (a, b) {
-		return {ctor: 'ToggleTargetFilter', _0: a, _1: b};
+		return {ctor: 'ToggleTarget', _0: a, _1: b};
 	});
-var _user$project$Model$ToggleLangFilter = F2(
+var _user$project$Model$ToggleLang = F2(
 	function (a, b) {
-		return {ctor: 'ToggleLangFilter', _0: a, _1: b};
+		return {ctor: 'ToggleLang', _0: a, _1: b};
 	});
-var _user$project$Model$ToggleChannelFilter = F2(
+var _user$project$Model$ToggleChannel = F2(
 	function (a, b) {
-		return {ctor: 'ToggleChannelFilter', _0: a, _1: b};
+		return {ctor: 'ToggleChannel', _0: a, _1: b};
 	});
+var _user$project$Model$ToggleFilter = function (a) {
+	return {ctor: 'ToggleFilter', _0: a};
+};
 var _user$project$Model$ReleasesFetched = function (a) {
 	return {ctor: 'ReleasesFetched', _0: a};
 };
@@ -10502,16 +10482,12 @@ var _user$project$View$filterCheckbox = F2(
 										_0: _elm_lang$html$Html_Attributes$type_('checkbox'),
 										_1: {
 											ctor: '::',
-											_0: _elm_lang$html$Html_Attributes$value(_p2),
+											_0: _elm_lang$html$Html_Events$onCheck(
+												handler(_p2)),
 											_1: {
 												ctor: '::',
-												_0: _elm_lang$html$Html_Events$onCheck(
-													handler(_p2)),
-												_1: {
-													ctor: '::',
-													_0: _elm_lang$html$Html_Attributes$checked(_p1._1),
-													_1: {ctor: '[]'}
-												}
+												_0: _elm_lang$html$Html_Attributes$checked(_p1._1),
+												_1: {ctor: '[]'}
 											}
 										}
 									},
@@ -10533,7 +10509,7 @@ var _user$project$View$filterSetForm = F3(
 		var filters = A2(
 			_elm_lang$core$List$map,
 			_user$project$View$filterCheckbox(handler),
-			_elm_lang$core$Dict$toList(filterSet));
+			filterSet);
 		return A2(
 			_elm_lang$html$Html$div,
 			{
@@ -10579,21 +10555,47 @@ var _user$project$View$filterSetForm = F3(
 var _user$project$View$viewFilters = function (_p3) {
 	var _p4 = _p3;
 	var _p5 = _p4.filters;
+	var eventHandler = F3(
+		function (msg, name, active) {
+			return _user$project$Model$ToggleFilter(
+				A2(msg, name, active));
+		});
+	var langs = _elm_lang$core$Dict$toList(_p5.langs);
+	var targets = _elm_lang$core$Dict$toList(_p5.targets);
+	var versions = _elm_lang$core$List$reverse(
+		_elm_lang$core$Dict$toList(_p5.versions));
+	var channels = _elm_lang$core$Dict$toList(_p5.channels);
 	return A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
 		{
 			ctor: '::',
-			_0: A3(_user$project$View$filterSetForm, _p5.versions, 'Versions', _user$project$Model$ToggleVersionFilter),
+			_0: A3(
+				_user$project$View$filterSetForm,
+				channels,
+				'Channels',
+				eventHandler(_user$project$Model$ToggleChannel)),
 			_1: {
 				ctor: '::',
-				_0: A3(_user$project$View$filterSetForm, _p5.targets, 'Targets', _user$project$Model$ToggleTargetFilter),
+				_0: A3(
+					_user$project$View$filterSetForm,
+					versions,
+					'Versions',
+					eventHandler(_user$project$Model$ToggleVersion)),
 				_1: {
 					ctor: '::',
-					_0: A3(_user$project$View$filterSetForm, _p5.channels, 'Channels', _user$project$Model$ToggleChannelFilter),
+					_0: A3(
+						_user$project$View$filterSetForm,
+						targets,
+						'Targets',
+						eventHandler(_user$project$Model$ToggleTarget)),
 					_1: {
 						ctor: '::',
-						_0: A3(_user$project$View$filterSetForm, _p5.langs, 'Langs', _user$project$Model$ToggleLangFilter),
+						_0: A3(
+							_user$project$View$filterSetForm,
+							langs,
+							'Langs',
+							eventHandler(_user$project$Model$ToggleLang)),
 						_1: {ctor: '[]'}
 					}
 				}
@@ -10787,7 +10789,7 @@ var _user$project$View$viewReleaseDetails = function (details) {
 															},
 															{
 																ctor: '::',
-																_0: _elm_lang$html$Html$text('Link'),
+																_0: _elm_lang$html$Html$text(details.filename),
 																_1: {ctor: '[]'}
 															}),
 														_1: {ctor: '[]'}
@@ -11063,7 +11065,7 @@ var _user$project$View$view = function (model) {
 									A2(
 										_elm_lang$core$List$map,
 										_user$project$View$viewRelease,
-										_user$project$Model$filterReleases(model))),
+										_user$project$Model$applyFilters(model))),
 								_1: {ctor: '[]'}
 							}),
 						_1: {
