@@ -2,13 +2,18 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 )
+
+import (
+	log "github.com/Sirupsen/logrus"
+)
+
+const USER_AGENT string = "systemaddons-versions"
 
 var DELIVERY_URL string
 var AUS_URL string
@@ -57,7 +62,9 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 			}
 
 			if _, err := os.Stat(filename); os.IsNotExist(err) {
-				fmt.Println("Download", filename)
+				log.WithFields(log.Fields{
+					"filename": filename,
+				}).Info("Start download")
 				err := Download(release.Url, filename)
 				if err != nil {
 					errc <- err
@@ -65,7 +72,9 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 				}
 			}
 
-			fmt.Println("Extract release", filename)
+			log.WithFields(log.Fields{
+				"filename": filename,
+			}).Info("Extract release")
 
 			dir, err := ioutil.TempDir("", "systemaddons-versions")
 			if err != nil {
@@ -83,7 +92,9 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 			var builtins []systemaddon
 			for _, path := range extracted {
 				if strings.HasSuffix(path, ".xpi") {
-					fmt.Println("Inspect addon", path)
+					log.WithFields(log.Fields{
+						"path": path,
+					}).Info("Inspect addon")
 					addon, err := addonVersion(path)
 					if err != nil {
 						errc <- err
@@ -91,7 +102,9 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 					}
 					builtins = append(builtins, *addon)
 				} else {
-					fmt.Println("Read build metadata", path)
+					log.WithFields(log.Fields{
+						"path": path,
+					}).Info("Read build metadata")
 					if err = appMetadata(path, &release); err != nil {
 						errc <- err
 						return
@@ -123,7 +136,8 @@ func main() {
 
 	minVersion, err := LastPublish(KINTO_URL)
 	if err != nil {
-		panic(err)
+		log.Fatal("Could not fetch info about last published release")
+		minVersion = ""
 	}
 	releases, errc := WalkReleases(done, DELIVERY_URL, minVersion)
 
@@ -134,9 +148,9 @@ func main() {
 	wg.Add(nbWorkers)
 	for i := 0; i < nbWorkers; i++ {
 		go func() {
-			dlerrc := inspectVersions(done, releases, results)
-			if err := <-dlerrc; err != nil {
-				panic(err)
+			ierrc := inspectVersions(done, releases, results)
+			for ierr := range ierrc {
+				log.Fatal(ierr)
 			}
 			wg.Done()
 		}()
@@ -149,11 +163,12 @@ func main() {
 	for r := range results {
 		err := Publish(KINTO_URL, KINTO_AUTH, r)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 	}
-	if err := <-errc; err != nil {
-		panic(err)
+	for err = range errc {
+		log.Fatal(err)
 	}
-	fmt.Println("Done")
+
+	log.Info("Done.")
 }

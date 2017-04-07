@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+import (
+	log "github.com/Sirupsen/logrus"
+)
+
 const VERSION string = "^[5-9][0-9]"
 const TARGET string = "linux-.+"
 const LANG string = "en-US"
@@ -27,7 +31,9 @@ type Listing struct {
 }
 
 func fetchlist(url string) (*Listing, error) {
-	fmt.Println("Fetch releases list", url)
+	log.WithFields(log.Fields{
+		"url": url,
+	}).Info("Fetch releases list")
 	client := http.Client{}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -35,12 +41,17 @@ func fetchlist(url string) (*Listing, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "systemaddons-versions")
+	req.Header.Set("User-Agent", USER_AGENT)
 
 	res, getErr := client.Do(req)
 	if getErr != nil {
 		return nil, getErr
 	}
+
+	if res.StatusCode != 200 {
+		return nil, errors.New("Could not fetch release list")
+	}
+
 	body, readErr := ioutil.ReadAll(res.Body)
 	if readErr != nil {
 		return nil, readErr
@@ -58,7 +69,7 @@ func WalkReleases(done <-chan struct{}, rootUrl string, minVersion string) (<-ch
 	errc := make(chan error, 1)
 
 	if minVersion != "" {
-		fmt.Println("Latest known version:", minVersion)
+		log.Info(fmt.Sprintf("Latest known version: %s", minVersion))
 	}
 
 	go func() {
@@ -69,15 +80,17 @@ func WalkReleases(done <-chan struct{}, rootUrl string, minVersion string) (<-ch
 		trunk, err := getNightlyRelease(rootUrl, "central")
 		if err != nil {
 			errc <- err
+		} else {
+			downloads <- trunk
 		}
-		downloads <- trunk
 
 		// Nightly Aurora
 		aurora, err := getNightlyRelease(rootUrl, "aurora")
 		if err != nil {
-			errc <- err
+			log.Warn("Could not fetch Aurora")
+		} else {
+			downloads <- aurora
 		}
-		downloads <- aurora
 
 		// Releases
 
@@ -102,7 +115,7 @@ func WalkReleases(done <-chan struct{}, rootUrl string, minVersion string) (<-ch
 			targetList, err := fetchlist(rootUrl + versionPrefix)
 			if err != nil {
 				errc <- err
-				return
+				continue
 			}
 			for _, targetPrefix := range targetList.Prefixes {
 				target := strings.Replace(targetPrefix, "/", "", 1)
@@ -112,7 +125,7 @@ func WalkReleases(done <-chan struct{}, rootUrl string, minVersion string) (<-ch
 				langList, err := fetchlist(rootUrl + versionPrefix + targetPrefix)
 				if err != nil {
 					errc <- err
-					return
+					continue
 				}
 				for _, langPrefix := range langList.Prefixes {
 					lang := strings.Replace(langPrefix, "/", "", 1)
@@ -122,7 +135,7 @@ func WalkReleases(done <-chan struct{}, rootUrl string, minVersion string) (<-ch
 					fileList, err := fetchlist(rootUrl + versionPrefix + targetPrefix + langPrefix)
 					if err != nil {
 						errc <- err
-						return
+						continue
 					}
 					for _, file := range fileList.Files {
 						if match, _ := regexp.MatchString(FILE, file.Name); !match {

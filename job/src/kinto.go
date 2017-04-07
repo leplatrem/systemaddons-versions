@@ -6,9 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+)
+
+import (
+	log "github.com/Sirupsen/logrus"
 )
 
 func LastPublish(serverUrl string) (release string, err error) {
@@ -55,7 +58,9 @@ func Publish(serverUrl string, authHeader string, info releaseinfo) (err error) 
 
 	url := serverUrl + "/buckets/systemaddons/collections/versions/records/" + recordId
 
-	fmt.Println("Published info to", url)
+	log.WithFields(log.Fields{
+		"url": url,
+	}).Info("Publish release info")
 
 	client := http.Client{}
 
