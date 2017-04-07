@@ -165,8 +165,8 @@ viewFilters { filters } =
         targets =
             Dict.toList filters.targets
 
-        langs =
-            Dict.toList filters.langs
+        addons =
+            Dict.toList filters.addons
 
         eventHandler msg =
             (\name active -> ToggleFilter <| msg name active)
@@ -183,7 +183,7 @@ viewFilters { filters } =
             [ filterSetForm channels "Channels" <| eventHandler ToggleChannel
             , filterSetForm versions "Versions" <| eventHandler ToggleVersion
             , filterSetForm targets "Targets" <| eventHandler ToggleTarget
-            , filterSetForm langs "Langs" <| eventHandler ToggleLang
+            , filterSetForm addons "Addons" <| eventHandler ToggleAddon
             ]
 
 

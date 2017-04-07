@@ -22,10 +22,6 @@ type alias Channel =
     String
 
 
-type alias Lang =
-    String
-
-
 type alias Target =
     String
 
@@ -34,11 +30,15 @@ type alias Version =
     String
 
 
+type alias Addon =
+    String
+
+
 type ToggleFilterMsg
     = ToggleChannel Channel Bool
-    | ToggleLang Lang Bool
     | ToggleTarget Target Bool
     | ToggleVersion Version Bool
+    | ToggleAddon Addon Bool
 
 
 type Msg
@@ -85,9 +85,9 @@ type alias FilterSet =
 
 type alias Filters =
     { channels : FilterSet
-    , langs : FilterSet
     , targets : FilterSet
     , versions : FilterSet
+    , addons : FilterSet
     }
 
 
@@ -102,9 +102,9 @@ init =
     { releases = []
     , filters =
         { channels = Dict.fromList []
-        , langs = Dict.fromList []
         , targets = Dict.fromList []
         , versions = Dict.fromList []
+        , addons = Dict.fromList []
         }
     }
         ! [ getReleaseList ]
@@ -183,6 +183,28 @@ extractVersionFilterSet releases =
             |> Dict.fromList
 
 
+extractAddonsFilterSet : List Release -> FilterSet
+extractAddonsFilterSet releases =
+    List.map .builtins releases
+        |> List.concat
+        |> List.map (\addon -> ( addon.id, True ))
+        |> Dict.fromList
+
+
+extractFilters : List Release -> Filters
+extractFilters releases =
+    { channels = extractFilterSet (.details >> .channel) releases
+    , targets = extractFilterSet (.details >> .target) releases
+    , versions = extractVersionFilterSet releases
+    , addons = extractAddonsFilterSet releases
+    }
+
+
+getActiveFilters : FilterSet -> List String
+getActiveFilters filterSet =
+    Dict.filter (\k v -> v) filterSet |> Dict.keys
+
+
 applyFilter : FilterSet -> (Release -> String) -> List Release -> List Release
 applyFilter filterSet accessor releases =
     List.filter
@@ -199,7 +221,18 @@ applyVersionFilter filterSet releases =
         (\{ details } ->
             List.any
                 (\major -> String.startsWith major details.version)
-                (Dict.filter (\k v -> v) filterSet |> Dict.keys)
+                (getActiveFilters filterSet)
+        )
+        releases
+
+
+applyAddonFilter : FilterSet -> List Release -> List Release
+applyAddonFilter filterSet releases =
+    List.filter
+        (\{ builtins } ->
+            List.any
+                (\addon -> List.member addon (List.map .id builtins))
+                (getActiveFilters filterSet)
         )
         releases
 
@@ -208,9 +241,9 @@ applyFilters : Model -> List Release
 applyFilters { filters, releases } =
     releases
         |> applyFilter filters.channels (.details >> .channel)
-        |> applyFilter filters.langs (.details >> .lang)
         |> applyFilter filters.targets (.details >> .target)
         |> applyVersionFilter filters.versions
+        |> applyAddonFilter filters.addons
 
 
 toggleFilter : FilterSet -> String -> Bool -> FilterSet
@@ -218,14 +251,11 @@ toggleFilter filterSet name active =
     Dict.update name (\_ -> Just active) filterSet
 
 
-updateFilters : ToggleFilterMsg -> Filters -> Filters
-updateFilters toggleMsg filters =
+toggleFilters : ToggleFilterMsg -> Filters -> Filters
+toggleFilters toggleMsg filters =
     case toggleMsg of
         ToggleChannel channel active ->
             { filters | channels = toggleFilter filters.channels channel active }
-
-        ToggleLang lang active ->
-            { filters | langs = toggleFilter filters.langs lang active }
 
         ToggleTarget target active ->
             { filters | targets = toggleFilter filters.targets target active }
@@ -233,21 +263,19 @@ updateFilters toggleMsg filters =
         ToggleVersion version active ->
             { filters | versions = toggleFilter filters.versions version active }
 
+        ToggleAddon addon active ->
+            { filters | addons = toggleFilter filters.addons addon active }
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update message ({ filters } as model) =
-    case message of
+update msg ({ filters } as model) =
+    case msg of
         ReleasesFetched result ->
             case result of
                 Ok releases ->
                     { model
                         | releases = releases
-                        , filters =
-                            { channels = extractFilterSet (.details >> .channel) releases
-                            , langs = extractFilterSet (.details >> .lang) releases
-                            , targets = extractFilterSet (.details >> .target) releases
-                            , versions = extractVersionFilterSet releases
-                            }
+                        , filters = extractFilters releases
                     }
                         ! []
 
@@ -255,4 +283,4 @@ update message ({ filters } as model) =
                     Debug.crash "Unhandled Kinto error"
 
         ToggleFilter msg ->
-            { model | filters = updateFilters msg filters } ! []
+            { model | filters = toggleFilters msg filters } ! []
