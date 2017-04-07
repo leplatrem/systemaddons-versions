@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+import (
+	log "github.com/Sirupsen/logrus"
+)
+
 const VERSION string = "^[5-9][0-9]"
 const TARGET string = "linux-.+"
 const LANG string = "en-US"
@@ -27,7 +31,9 @@ type Listing struct {
 }
 
 func fetchlist(url string) (*Listing, error) {
-	fmt.Println("Fetch releases list", url)
+	log.WithFields(log.Fields{
+		"url": url,
+	}).Info("Fetch releases list")
 	client := http.Client{}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -58,7 +64,7 @@ func WalkReleases(done <-chan struct{}, rootUrl string, minVersion string) (<-ch
 	errc := make(chan error, 1)
 
 	if minVersion != "" {
-		fmt.Println("Latest known version:", minVersion)
+		log.Info(fmt.Sprintf("Latest known version: %s", minVersion))
 	}
 
 	go func() {

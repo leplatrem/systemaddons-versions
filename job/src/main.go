@@ -2,12 +2,15 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+)
+
+import (
+	log "github.com/Sirupsen/logrus"
 )
 
 var DELIVERY_URL string
@@ -57,7 +60,9 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 			}
 
 			if _, err := os.Stat(filename); os.IsNotExist(err) {
-				fmt.Println("Download", filename)
+				log.WithFields(log.Fields{
+					"filename": filename,
+				}).Info("Start download")
 				err := Download(release.Url, filename)
 				if err != nil {
 					errc <- err
@@ -65,7 +70,9 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 				}
 			}
 
-			fmt.Println("Extract release", filename)
+			log.WithFields(log.Fields{
+				"filename": filename,
+			}).Info("Extract release")
 
 			dir, err := ioutil.TempDir("", "systemaddons-versions")
 			if err != nil {
@@ -83,7 +90,9 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 			var builtins []systemaddon
 			for _, path := range extracted {
 				if strings.HasSuffix(path, ".xpi") {
-					fmt.Println("Inspect addon", path)
+					log.WithFields(log.Fields{
+						"path": path,
+					}).Info("Inspect addon")
 					addon, err := addonVersion(path)
 					if err != nil {
 						errc <- err
@@ -91,7 +100,9 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 					}
 					builtins = append(builtins, *addon)
 				} else {
-					fmt.Println("Read build metadata", path)
+					log.WithFields(log.Fields{
+						"path": path,
+					}).Info("Read build metadata")
 					if err = appMetadata(path, &release); err != nil {
 						errc <- err
 						return
@@ -155,5 +166,5 @@ func main() {
 	if err := <-errc; err != nil {
 		panic(err)
 	}
-	fmt.Println("Done")
+	log.Info("Done.")
 }

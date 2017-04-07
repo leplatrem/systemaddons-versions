@@ -4,11 +4,14 @@ import (
 	"archive/zip"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
+)
+
+import (
+	log "github.com/Sirupsen/logrus"
 )
 
 func appMetadata(path string, info *release) (err error) {
@@ -85,7 +88,10 @@ func fetchUpdates(url string, release release, builtins []systemaddon) (results 
 	url = strings.Replace(url, "{DISTRIBUTION}", "default", 1)
 	url = strings.Replace(url, "{DISTRIBUTION_VERSION}", "default", 1)
 
-	fmt.Println("Fetch updates info", url)
+	log.WithFields(log.Fields{
+		"url": url,
+	}).Info("Fetch updates info")
+
 	client := http.Client{}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
