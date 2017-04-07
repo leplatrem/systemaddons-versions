@@ -10466,7 +10466,16 @@ var _user$project$View$filterCheckbox = F2(
 					{
 						ctor: '::',
 						_0: _elm_lang$html$Html_Attributes$class('checkbox'),
-						_1: {ctor: '[]'}
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$style(
+								{
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'margin', _1: '0'},
+									_1: {ctor: '[]'}
+								}),
+							_1: {ctor: '[]'}
+						}
 					},
 					{
 						ctor: '::',
@@ -10567,7 +10576,32 @@ var _user$project$View$viewFilters = function (_p3) {
 	var channels = _elm_lang$core$Dict$toList(_p5.channels);
 	return A2(
 		_elm_lang$html$Html$div,
-		{ctor: '[]'},
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$style(
+				{
+					ctor: '::',
+					_0: {ctor: '_Tuple2', _0: 'position', _1: 'fixed'},
+					_1: {
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: 'max-height', _1: 'calc(100vh - 75px)'},
+						_1: {
+							ctor: '::',
+							_0: {ctor: '_Tuple2', _0: 'position', _1: 'fixed'},
+							_1: {
+								ctor: '::',
+								_0: {ctor: '_Tuple2', _0: 'overflow-y', _1: 'auto'},
+								_1: {
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'padding-right', _1: '.1em'},
+									_1: {ctor: '[]'}
+								}
+							}
+						}
+					}
+				}),
+			_1: {ctor: '[]'}
+		},
 		{
 			ctor: '::',
 			_0: A3(
@@ -10698,7 +10732,7 @@ var _user$project$View$viewReleaseDetails = function (details) {
 											{ctor: '[]'},
 											{
 												ctor: '::',
-												_0: _elm_lang$html$Html$text('Channel'),
+												_0: _elm_lang$html$Html$text('Version'),
 												_1: {ctor: '[]'}
 											}),
 										_1: {
@@ -10708,10 +10742,21 @@ var _user$project$View$viewReleaseDetails = function (details) {
 												{ctor: '[]'},
 												{
 													ctor: '::',
-													_0: _elm_lang$html$Html$text('URL'),
+													_0: _elm_lang$html$Html$text('Channel'),
 													_1: {ctor: '[]'}
 												}),
-											_1: {ctor: '[]'}
+											_1: {
+												ctor: '::',
+												_0: A2(
+													_elm_lang$html$Html$th,
+													{ctor: '[]'},
+													{
+														ctor: '::',
+														_0: _elm_lang$html$Html$text('URL'),
+														_1: {ctor: '[]'}
+													}),
+												_1: {ctor: '[]'}
+											}
 										}
 									}
 								}
@@ -10766,7 +10811,7 @@ var _user$project$View$viewReleaseDetails = function (details) {
 												{ctor: '[]'},
 												{
 													ctor: '::',
-													_0: _elm_lang$html$Html$text(details.channel),
+													_0: _elm_lang$html$Html$text(details.version),
 													_1: {ctor: '[]'}
 												}),
 											_1: {
@@ -10776,25 +10821,36 @@ var _user$project$View$viewReleaseDetails = function (details) {
 													{ctor: '[]'},
 													{
 														ctor: '::',
-														_0: A2(
-															_elm_lang$html$Html$a,
-															{
-																ctor: '::',
-																_0: _elm_lang$html$Html_Attributes$href(details.url),
-																_1: {
-																	ctor: '::',
-																	_0: _elm_lang$html$Html_Attributes$title(details.url),
-																	_1: {ctor: '[]'}
-																}
-															},
-															{
-																ctor: '::',
-																_0: _elm_lang$html$Html$text(details.filename),
-																_1: {ctor: '[]'}
-															}),
+														_0: _elm_lang$html$Html$text(details.channel),
 														_1: {ctor: '[]'}
 													}),
-												_1: {ctor: '[]'}
+												_1: {
+													ctor: '::',
+													_0: A2(
+														_elm_lang$html$Html$td,
+														{ctor: '[]'},
+														{
+															ctor: '::',
+															_0: A2(
+																_elm_lang$html$Html$a,
+																{
+																	ctor: '::',
+																	_0: _elm_lang$html$Html_Attributes$href(details.url),
+																	_1: {
+																		ctor: '::',
+																		_0: _elm_lang$html$Html_Attributes$title(details.url),
+																		_1: {ctor: '[]'}
+																	}
+																},
+																{
+																	ctor: '::',
+																	_0: _elm_lang$html$Html$text(details.filename),
+																	_1: {ctor: '[]'}
+																}),
+															_1: {ctor: '[]'}
+														}),
+													_1: {ctor: '[]'}
+												}
 											}
 										}
 									}
@@ -10972,7 +11028,8 @@ var _user$project$View$viewRelease = function (_p6) {
 						{ctor: '[]'},
 						{
 							ctor: '::',
-							_0: _elm_lang$html$Html$text(_p8.filename),
+							_0: _elm_lang$html$Html$text(
+								A2(_elm_lang$core$Basics_ops['++'], 'Firefox ', _p8.version)),
 							_1: {ctor: '[]'}
 						}),
 					_1: {ctor: '[]'}
