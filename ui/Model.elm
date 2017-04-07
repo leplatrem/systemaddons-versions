@@ -177,7 +177,7 @@ extractVersionFilterSet releases =
                 _ ->
                     ( "None", x )
     in
-        extractFilterSet (.details >> .filename) releases
+        extractFilterSet (.details >> .version) releases
             |> Dict.toList
             |> List.map extractVersion
             |> Dict.fromList
@@ -198,7 +198,7 @@ applyVersionFilter filterSet releases =
     List.filter
         (\{ details } ->
             List.any
-                (\f -> String.startsWith f details.filename)
+                (\f -> String.startsWith f details.version)
                 (Dict.filter (\k v -> v) filterSet |> Dict.keys)
         )
         releases
