@@ -21,7 +21,7 @@ import (
 	"sync"
 )
 
-const DELIVERY_URL string = "http://delivery-prod-elb-1rws3domn9m17-111664144.us-west-2.elb.amazonaws.com/pub/firefox/releases/"
+const DELIVERY_URL string = "https://archive.mozilla.org/pub/firefox/"
 const AUS_URL string = "https://aus5.mozilla.org/update/3/SystemAddons/{VERSION}/{BUILD_ID}/{BUILD_TARGET}/{LOCALE}/{CHANNEL}/{OS_VERSION}/{DISTRIBUTION}/{DISTRIBUTION_VERSION}/update.xml"
 const KINTO_URL string = "https://kinto-ota.dev.mozaws.net/v1"
 const KINTO_AUTH string = "Basic dXNlcjpwYXNz" // user:pass
@@ -30,10 +30,11 @@ const KINTO_AUTH string = "Basic dXNlcjpwYXNz" // user:pass
 // const TARGET string = "win|mac|linux"
 // const LANG string = "[a-z]+\\-[A-Z]+"
 // const FILE string = "(zip|\\d\\.tar\\.gz|dmg)$"
+// const VERSION string = "50.0b3"
 const VERSION string = "^[5-9][0-9]"
-const TARGET string = "linux-x86_64"
+const TARGET string = "linux-.+"
 const LANG string = "en-US"
-const FILE string = "\\d\\.tar\\.(gz|bz2)$"
+const FILE string = "\\.tar\\.(gz|bz2)$"
 
 type release struct {
 	Url      string `json:"url"`
@@ -106,6 +107,24 @@ func walkReleases(done <-chan struct{}, rootUrl string, minVersion string) (<-ch
 		defer close(downloads)
 		defer close(errc)
 
+		// Nightly trunk
+		trunk, err := getNightlyRelease(rootUrl, "central")
+		if err != nil {
+			errc <- err
+		}
+		downloads <- trunk
+
+		// Nightly Aurora
+		aurora, err := getNightlyRelease(rootUrl, "aurora")
+		if err != nil {
+			errc <- err
+		}
+		downloads <- aurora
+
+		// Releases
+
+		rootUrl = rootUrl + "releases/"
+
 		versionList, err := fetchlist(rootUrl)
 		if err != nil {
 			errc <- err
@@ -170,6 +189,35 @@ func walkReleases(done <-chan struct{}, rootUrl string, minVersion string) (<-ch
 		}
 	}()
 	return downloads, errc
+}
+
+func getNightlyRelease(rootUrl string, channel string) (result release, err error) {
+	channelPrefix := fmt.Sprintf("nightly/latest-mozilla-%s/", channel)
+	url := rootUrl + channelPrefix
+	fileList, err := fetchlist(url)
+	if err != nil {
+		return result, err
+	}
+
+	filePattern := regexp.MustCompile(fmt.Sprintf("firefox-(.+)\\.(%s)\\.(%s)%s", LANG, TARGET, FILE))
+
+	for _, file := range fileList.Files {
+		match := filePattern.FindStringSubmatch(string(file.Name))
+		if len(match) > 0 {
+			version := match[1]
+			lang := match[2]
+			target := match[3]
+			return release{
+				Url:      url + file.Name,
+				BuildID:  "unknown",
+				Version:  version,
+				Target:   target,
+				Lang:     lang,
+				Channel:  channel,
+				Filename: file.Name}, nil
+		}
+	}
+	return result, errors.New("Could not find nightly release")
 }
 
 func download(url string, output string) (err error) {
@@ -246,13 +294,16 @@ func appMetadata(path string, info *release) (err error) {
 	if err != nil {
 		return err
 	}
-	re := regexp.MustCompile("BuildID=(.+)\\n.*SourceRepository=.+/releases/mozilla-(.+)\\n")
+	re := regexp.MustCompile("BuildID=(.+)\\n.*SourceRepository=.+mozilla-(.+)\\n")
 	match := re.FindStringSubmatch(string(data))
 	if len(match) < 2 {
 		return errors.New("Could not read metadata")
 	}
 	info.BuildID = match[1]
 	info.Channel = match[2]
+	if info.Channel == "central" {
+		info.Channel = "nightly"
+	}
 	return nil
 }
 
@@ -438,7 +489,7 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 }
 
 func lastPublish(serverUrl string) (release string, err error) {
-	url := serverUrl + "/buckets/systemaddons/collections/versions/records?_sort=-release.version&_limit=1"
+	url := serverUrl + "/buckets/systemaddons/collections/versions/records?_sort=-release.version&release.channel=beta&_limit=1"
 
 	client := http.Client{}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
