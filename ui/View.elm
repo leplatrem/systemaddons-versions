@@ -138,13 +138,11 @@ filterCheckbox handler ( name, active ) =
         ]
 
 
-filterSetForm : FilterSet -> String -> (String -> Bool -> Msg) -> Html Msg
+filterSetForm : List ( String, Bool ) -> String -> (String -> Bool -> Msg) -> Html Msg
 filterSetForm filterSet label handler =
     let
         filters =
-            filterSet
-                |> Dict.toList
-                |> List.map (filterCheckbox handler)
+            filterSet |> List.map (filterCheckbox handler)
     in
         div [ class "panel panel-default" ]
             [ div [ class "panel-heading" ] [ strong [] [ text label ] ]
@@ -155,14 +153,26 @@ filterSetForm filterSet label handler =
 viewFilters : Model -> Html Msg
 viewFilters { filters } =
     let
+        channels =
+            Dict.toList filters.channels
+
+        versions =
+            Dict.toList filters.versions |> List.reverse
+
+        targets =
+            Dict.toList filters.targets
+
+        langs =
+            Dict.toList filters.langs
+
         eventHandler msg =
             (\name active -> ToggleFilter <| msg name active)
     in
         div []
-            [ filterSetForm filters.versions "Versions" <| eventHandler ToggleVersion
-            , filterSetForm filters.targets "Targets" <| eventHandler ToggleTarget
-            , filterSetForm filters.channels "Channels" <| eventHandler ToggleChannel
-            , filterSetForm filters.langs "Langs" <| eventHandler ToggleLang
+            [ filterSetForm channels "Channels" <| eventHandler ToggleChannel
+            , filterSetForm versions "Versions" <| eventHandler ToggleVersion
+            , filterSetForm targets "Targets" <| eventHandler ToggleTarget
+            , filterSetForm langs "Langs" <| eventHandler ToggleLang
             ]
 
 

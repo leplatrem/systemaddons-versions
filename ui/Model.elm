@@ -169,13 +169,13 @@ extractVersionFilterSet : List Release -> FilterSet
 extractVersionFilterSet releases =
     -- TODO: sort desc
     let
-        extractVersion ( version, x ) =
+        extractVersion ( version, active ) =
             case (String.split "." version) of
-                v :: _ ->
-                    ( v, x )
+                major :: _ ->
+                    ( major, active )
 
                 _ ->
-                    ( "None", x )
+                    ( version, active )
     in
         extractFilterSet (.details >> .version) releases
             |> Dict.toList
@@ -198,7 +198,7 @@ applyVersionFilter filterSet releases =
     List.filter
         (\{ details } ->
             List.any
-                (\f -> String.startsWith f details.version)
+                (\major -> String.startsWith major details.version)
                 (Dict.filter (\k v -> v) filterSet |> Dict.keys)
         )
         releases
