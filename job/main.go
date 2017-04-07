@@ -10,20 +10,17 @@ import (
 	"sync"
 )
 
-const DELIVERY_URL string = "https://archive.mozilla.org/pub/firefox/"
-const AUS_URL string = "https://aus5.mozilla.org/update/3/SystemAddons/{VERSION}/{BUILD_ID}/{BUILD_TARGET}/{LOCALE}/{CHANNEL}/{OS_VERSION}/{DISTRIBUTION}/{DISTRIBUTION_VERSION}/update.xml"
-const KINTO_URL string = "https://kinto-ota.dev.mozaws.net/v1"
-const KINTO_AUTH string = "Basic dXNlcjpwYXNz" // user:pass
+var DELIVERY_URL string
+var AUS_URL string
+var KINTO_URL string
+var KINTO_AUTH string
 
-// const VERSION string = "^[0-9]+"
-// const TARGET string = "win|mac|linux"
-// const LANG string = "[a-z]+\\-[A-Z]+"
-// const FILE string = "(zip|\\d\\.tar\\.gz|dmg)$"
-// const VERSION string = "50.0b3"
-const VERSION string = "^[5-9][0-9]"
-const TARGET string = "linux-.+"
-const LANG string = "en-US"
-const FILE string = "\\.tar\\.(gz|bz2)$"
+func init() {
+	DELIVERY_URL = GetEnv("DELIVERY_URL", "https://archive.mozilla.org/pub/firefox/")
+	AUS_URL = GetEnv("AUS_URL", "https://aus5.mozilla.org/update/3/SystemAddons/{VERSION}/{BUILD_ID}/{BUILD_TARGET}/{LOCALE}/{CHANNEL}/{OS_VERSION}/{DISTRIBUTION}/{DISTRIBUTION_VERSION}/update.xml")
+	KINTO_URL = GetEnv("KINTO_URL", "https://kinto-ota.dev.mozaws.net/v1")
+	KINTO_AUTH = GetEnv("KINTO_AUTH", "Basic dXNlcjpwYXNz") // user:pass
+}
 
 type release struct {
 	Url      string `json:"url"`
@@ -45,7 +42,6 @@ type releaseinfo struct {
 	Builtins []systemaddon `json:"builtins"`
 	Updates  []systemaddon `json:"updates"`
 }
-
 
 func inspectVersions(done <-chan struct{}, releases <-chan release, results chan<- releaseinfo) <-chan error {
 	errc := make(chan error, 1)
@@ -103,7 +99,7 @@ func inspectVersions(done <-chan struct{}, releases <-chan release, results chan
 				}
 			}
 
-			updates, err := fetchUpdates(release, builtins)
+			updates, err := fetchUpdates(AUS_URL, release, builtins)
 			if err != nil {
 				errc <- err
 				return
