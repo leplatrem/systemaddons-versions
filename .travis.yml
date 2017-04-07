@@ -3,4 +3,4 @@ language: go
 go:
   - 1.7.x
 
-script: go run jobs/*.go
+script: go run job/src/*.go
