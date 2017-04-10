@@ -199,15 +199,23 @@ viewFilters { filters } =
             ]
 
 
+spinner : Html Msg
+spinner =
+    div [ class "loader-wrapper" ] [ div [ class "loader" ] [] ]
+
+
 view : Model -> Html Msg
-view model =
+view ({ loading } as model) =
     div [ class "container" ]
         [ div [ class "header" ]
             [ h1 [] [ Html.text "System Addons" ] ]
-        , div [ class "row" ]
-            [ div [ class "col-sm-9" ]
-                [ div [] <| List.map viewRelease <| applyFilters model ]
-            , div [ class "col-sm-3" ]
-                [ viewFilters model ]
-            ]
+        , div [ class "row" ] <|
+            if loading then
+                [ spinner ]
+            else
+                [ div [ class "col-sm-9" ]
+                    [ div [] <| List.map viewRelease <| applyFilters model ]
+                , div [ class "col-sm-3" ]
+                    [ viewFilters model ]
+                ]
         ]
