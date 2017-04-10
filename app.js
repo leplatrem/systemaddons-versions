@@ -10805,15 +10805,16 @@ var _user$project$Model$update = F2(
 						_p26,
 						{
 							releases: _p24,
-							filters: _user$project$Model$extractFilters(_p24)
+							filters: _user$project$Model$extractFilters(_p24),
+							loading: false
 						}),
 					{ctor: '[]'});
 			} else {
 				return _elm_lang$core$Native_Utils.crashCase(
 					'Model',
 					{
-						start: {line: 274, column: 13},
-						end: {line: 283, column: 56}
+						start: {line: 276, column: 13},
+						end: {line: 286, column: 56}
 					},
 					_p23)('Unhandled Kinto error');
 			}
@@ -10882,9 +10883,9 @@ var _user$project$Model$Filters = F4(
 	function (a, b, c, d) {
 		return {channels: a, targets: b, versions: c, addons: d};
 	});
-var _user$project$Model$Model = F2(
-	function (a, b) {
-		return {releases: a, filters: b};
+var _user$project$Model$Model = F3(
+	function (a, b, c) {
+		return {releases: a, filters: b, loading: c};
 	});
 var _user$project$Model$ToggleAddon = F2(
 	function (a, b) {
@@ -10932,7 +10933,8 @@ var _user$project$Model$init = A2(
 				{ctor: '[]'}),
 			addons: _elm_lang$core$Dict$fromList(
 				{ctor: '[]'})
-		}
+		},
+		loading: true
 	},
 	{
 		ctor: '::',
@@ -10940,6 +10942,25 @@ var _user$project$Model$init = A2(
 		_1: {ctor: '[]'}
 	});
 
+var _user$project$View$spinner = A2(
+	_elm_lang$html$Html$div,
+	{
+		ctor: '::',
+		_0: _elm_lang$html$Html_Attributes$class('loader-wrapper'),
+		_1: {ctor: '[]'}
+	},
+	{
+		ctor: '::',
+		_0: A2(
+			_elm_lang$html$Html$div,
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html_Attributes$class('loader'),
+				_1: {ctor: '[]'}
+			},
+			{ctor: '[]'}),
+		_1: {ctor: '[]'}
+	});
 var _user$project$View$filterCheckbox = F2(
 	function (handler, _p0) {
 		var _p1 = _p0;
@@ -11597,7 +11618,9 @@ var _user$project$View$viewRelease = function (_p6) {
 			}
 		});
 };
-var _user$project$View$view = function (model) {
+var _user$project$View$view = function (_p9) {
+	var _p10 = _p9;
+	var _p11 = _p10;
 	return A2(
 		_elm_lang$html$Html$div,
 		{
@@ -11635,7 +11658,11 @@ var _user$project$View$view = function (model) {
 						_0: _elm_lang$html$Html_Attributes$class('row'),
 						_1: {ctor: '[]'}
 					},
-					{
+					_p10.loading ? {
+						ctor: '::',
+						_0: _user$project$View$spinner,
+						_1: {ctor: '[]'}
+					} : {
 						ctor: '::',
 						_0: A2(
 							_elm_lang$html$Html$div,
@@ -11652,7 +11679,7 @@ var _user$project$View$view = function (model) {
 									A2(
 										_elm_lang$core$List$map,
 										_user$project$View$viewRelease,
-										_user$project$Model$applyFilters(model))),
+										_user$project$Model$applyFilters(_p11))),
 								_1: {ctor: '[]'}
 							}),
 						_1: {
@@ -11666,7 +11693,7 @@ var _user$project$View$view = function (model) {
 								},
 								{
 									ctor: '::',
-									_0: _user$project$View$viewFilters(model),
+									_0: _user$project$View$viewFilters(_p11),
 									_1: {ctor: '[]'}
 								}),
 							_1: {ctor: '[]'}
