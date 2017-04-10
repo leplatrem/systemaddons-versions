@@ -78,14 +78,13 @@ func Publish(serverUrl string, authHeader string, info releaseinfo) (err error) 
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "systemaddons-versions")
-	req.Header.Set("If-None-Match", "*")
 	req.Header.Set("Authorization", authHeader)
 
 	res, putErr := client.Do(req)
 	if putErr != nil {
 		return putErr
 	}
-	if (res.StatusCode != 201) && (res.StatusCode != 412) {
+	if (res.StatusCode != 201) && (res.StatusCode != 200) {
 		return errors.New("Could not publish release info")
 	}
 	return nil
