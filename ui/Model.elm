@@ -94,6 +94,7 @@ type alias Filters =
 type alias Model =
     { releases : List Release
     , filters : Filters
+    , loading : Bool
     }
 
 
@@ -106,6 +107,7 @@ init =
         , versions = Dict.fromList []
         , addons = Dict.fromList []
         }
+    , loading = True
     }
         ! [ getReleaseList ]
 
@@ -276,6 +278,7 @@ update msg ({ filters } as model) =
                     { model
                         | releases = releases
                         , filters = extractFilters releases
+                        , loading = False
                     }
                         ! []
 
