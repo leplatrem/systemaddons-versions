@@ -1,5 +1,7 @@
 module View exposing (view)
 
+import Date
+import Date.Format
 import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -114,11 +116,21 @@ viewSystemAddons builtins updates =
         ]
 
 
+formatDate : Int -> String
+formatDate last_modified =
+    Date.fromTime (toFloat last_modified)
+        |> Date.Format.format "%Y/%m/%d %H:%k:%S"
+
+
 viewRelease : Release -> Html Msg
-viewRelease { details, builtins, updates } =
+viewRelease { details, builtins, updates, last_modified } =
     div [ class "panel panel-default" ]
         [ div [ class "panel-heading" ]
-            [ strong [] [ text <| "Firefox " ++ details.version ] ]
+            [ div [ class "row" ]
+                [ strong [ class "col-sm-6" ] [ text <| "Firefox " ++ details.version ]
+                , em [ class "col-sm-6 text-right" ] [ text <| formatDate last_modified ]
+                ]
+            ]
         , div [ class "panel-body" ]
             [ viewReleaseDetails details
             , h4 [] [ text "System Addons" ]
