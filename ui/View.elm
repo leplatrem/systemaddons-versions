@@ -1,11 +1,11 @@
 module View exposing (view)
 
 import Date
-import Date.Format
 import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Date.Format
 import Model
     exposing
         ( Model
