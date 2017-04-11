@@ -123,11 +123,12 @@ formatDate last_modified =
 
 
 viewRelease : Release -> Html Msg
-viewRelease { details, builtins, updates, last_modified } =
-    div [ class "panel panel-default" ]
+viewRelease { id, details, builtins, updates, last_modified } =
+    div [ class "panel panel-default", Html.Attributes.id id ]
         [ div [ class "panel-heading" ]
             [ div [ class "row" ]
-                [ strong [ class "col-sm-6" ] [ text <| "Firefox " ++ details.version ]
+                [ strong [ class "col-sm-6" ]
+                    [ a [ href <| "./#" ++ id ] [ text <| "Firefox " ++ details.version ] ]
                 , em [ class "col-sm-6 text-right" ] [ text <| formatDate last_modified ]
                 ]
             ]
