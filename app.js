@@ -10569,6 +10569,12 @@ var _mgold$elm_date_format$Date_Format$format = F2(
 	});
 var _mgold$elm_date_format$Date_Format$formatISO8601 = _mgold$elm_date_format$Date_Format$format('%Y-%m-%dT%H:%M:%SZ');
 
+var _user$project$Ports$onFetched = _elm_lang$core$Native_Platform.outgoingPort(
+	'onFetched',
+	function (v) {
+		return v;
+	});
+
 var _user$project$Model$toggleFilter = F3(
 	function (filterSet, name, active) {
 		return A3(
@@ -10808,13 +10814,17 @@ var _user$project$Model$update = F2(
 							filters: _user$project$Model$extractFilters(_p24),
 							loading: false
 						}),
-					{ctor: '[]'});
+					{
+						ctor: '::',
+						_0: _user$project$Ports$onFetched(''),
+						_1: {ctor: '[]'}
+					});
 			} else {
 				return _elm_lang$core$Native_Utils.crashCase(
 					'Model',
 					{
-						start: {line: 276, column: 13},
-						end: {line: 286, column: 56}
+						start: {line: 277, column: 13},
+						end: {line: 287, column: 56}
 					},
 					_p23)('Unhandled Kinto error');
 			}
