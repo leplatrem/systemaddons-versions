@@ -10,6 +10,18 @@
 
   <body>
     <script src="app.js"></script>
-    <script>Elm.Main.fullscreen()</script>
+    <script>
+    const hash = location.hash;
+    location.hash = "";
+    const app = Elm.Main.fullscreen();
+    app.ports.onFetched.subscribe(() => {
+      if (hash) {
+        // These 100ms is the amount of time required for the browser to fully
+        // render the list of releases after they've been received. We can't
+        // precisely know this value, so we arbitrarily picked 100.
+        setTimeout(() => location.hash = hash, 100);
+      }
+    });
+    </script>
   </body>
 </html>
