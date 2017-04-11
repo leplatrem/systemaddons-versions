@@ -11524,13 +11524,18 @@ var _user$project$View$viewSystemAddons = F2(
 	});
 var _user$project$View$viewRelease = function (_p6) {
 	var _p7 = _p6;
+	var _p9 = _p7.id;
 	var _p8 = _p7.details;
 	return A2(
 		_elm_lang$html$Html$div,
 		{
 			ctor: '::',
 			_0: _elm_lang$html$Html_Attributes$class('panel panel-default'),
-			_1: {ctor: '[]'}
+			_1: {
+				ctor: '::',
+				_0: _elm_lang$html$Html_Attributes$id(_p9),
+				_1: {ctor: '[]'}
+			}
 		},
 		{
 			ctor: '::',
@@ -11561,8 +11566,20 @@ var _user$project$View$viewRelease = function (_p6) {
 								},
 								{
 									ctor: '::',
-									_0: _elm_lang$html$Html$text(
-										A2(_elm_lang$core$Basics_ops['++'], 'Firefox ', _p8.version)),
+									_0: A2(
+										_elm_lang$html$Html$a,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$href(
+												A2(_elm_lang$core$Basics_ops['++'], './#', _p9)),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text(
+												A2(_elm_lang$core$Basics_ops['++'], 'Firefox ', _p8.version)),
+											_1: {ctor: '[]'}
+										}),
 									_1: {ctor: '[]'}
 								}),
 							_1: {
@@ -11618,9 +11635,9 @@ var _user$project$View$viewRelease = function (_p6) {
 			}
 		});
 };
-var _user$project$View$view = function (_p9) {
-	var _p10 = _p9;
+var _user$project$View$view = function (_p10) {
 	var _p11 = _p10;
+	var _p12 = _p11;
 	return A2(
 		_elm_lang$html$Html$div,
 		{
@@ -11658,7 +11675,7 @@ var _user$project$View$view = function (_p9) {
 						_0: _elm_lang$html$Html_Attributes$class('row'),
 						_1: {ctor: '[]'}
 					},
-					_p10.loading ? {
+					_p11.loading ? {
 						ctor: '::',
 						_0: _user$project$View$spinner,
 						_1: {ctor: '[]'}
@@ -11679,7 +11696,7 @@ var _user$project$View$view = function (_p9) {
 									A2(
 										_elm_lang$core$List$map,
 										_user$project$View$viewRelease,
-										_user$project$Model$applyFilters(_p11))),
+										_user$project$Model$applyFilters(_p12))),
 								_1: {ctor: '[]'}
 							}),
 						_1: {
@@ -11693,7 +11710,7 @@ var _user$project$View$view = function (_p9) {
 								},
 								{
 									ctor: '::',
-									_0: _user$project$View$viewFilters(_p11),
+									_0: _user$project$View$viewFilters(_p12),
 									_1: {ctor: '[]'}
 								}),
 							_1: {ctor: '[]'}
