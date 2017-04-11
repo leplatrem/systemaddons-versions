@@ -16,6 +16,7 @@ module Model
 import Dict
 import Kinto
 import Json.Decode as Decode
+import Ports
 
 
 type alias Channel =
@@ -280,7 +281,7 @@ update msg ({ filters } as model) =
                         , filters = extractFilters releases
                         , loading = False
                     }
-                        ! []
+                        ! [ Ports.onFetched "" ]
 
                 Err err ->
                     Debug.crash "Unhandled Kinto error"

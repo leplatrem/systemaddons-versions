@@ -10,6 +10,15 @@
 
   <body>
     <script src="app.js"></script>
-    <script>Elm.Main.fullscreen()</script>
+    <script>
+    const hash = location.hash;
+    location.hash = "";
+    const app = Elm.Main.fullscreen();
+    app.ports.onFetched.subscribe(() => {
+      if (hash) {
+        setTimeout(() => location.hash = hash, 100);
+      }
+    });
+    </script>
   </body>
 </html>
